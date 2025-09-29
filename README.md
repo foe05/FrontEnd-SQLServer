@@ -21,7 +21,7 @@ Ein Streamlit-basiertes Dashboard für die Analyse von SQL Server Zeiterfassungs
 ### Projekt-Zusammenfassung
 | Projekt | Kunde | Sollstunden Gesamt | Iststunden Gesamt | Erfüllungsstand (%) | Status |
 |---------|-------|-------------------|------------------|-------------------|--------|
-| P24SAN06 | INTEND Geoinformatik | 120.0 STD | 87.5 STD | 72.9% | 🟢 Buchbar |
+| P24XYL06 | MACHEN GMBH | 120.0 STD | 87.5 STD | 72.9% | 🟢 Buchbar |
 | P24XYZ01 | Mustermann AG | 80.0 STD | 95.0 STD | 118.8% | 🔴 Überbucht |
 
 ### Tätigkeits-Details
@@ -147,7 +147,7 @@ TEST_MODE=true
 {
   "users": {
     "user@company.com": {
-      "projects": ["P24SAN06", "P24XYZ01"],
+      "projects": ["P24XYL06", "P24XYZ01"],
       "permissions": ["read", "export", "edit_targets"]
     }
   }
