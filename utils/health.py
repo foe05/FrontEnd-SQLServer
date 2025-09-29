@@ -7,8 +7,13 @@ import os
 from datetime import datetime
 from typing import Dict, Any
 import requests
-from config.database import db_config
 from components.auth import auth_manager
+
+# Import database config based on environment
+if os.getenv('TEST_MODE', 'false').lower() == 'true':
+    from config.test_database import test_db_config as db_config
+else:
+    from config.database import db_config
 
 class HealthChecker:
     """Application health monitoring"""

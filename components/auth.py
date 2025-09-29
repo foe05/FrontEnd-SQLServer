@@ -4,10 +4,17 @@ Authentication component with Entra ID integration and fallback
 import os
 import json
 import streamlit as st
-import msal
 from typing import Optional, Dict, Any
 import requests
 import logging
+
+# Import msal only if not in test mode or if available
+try:
+    import msal
+    MSAL_AVAILABLE = True
+except ImportError:
+    MSAL_AVAILABLE = False
+    logging.warning("msal not available - authentication will use fallback mode only")
 
 class AuthManager:
     """Authentication manager with Entra ID and local fallback"""
@@ -27,7 +34,7 @@ class AuthManager:
         self.users_config = self._load_users_config()
         
         # Initialize MSAL app if Entra ID is configured and not in test mode
-        if not self.test_mode and self.client_id and self.client_secret and self.tenant_id:
+        if not self.test_mode and self.client_id and self.client_secret and self.tenant_id and MSAL_AVAILABLE:
             self.app = msal.ConfidentialClientApplication(
                 self.client_id,
                 authority=self.authority,
@@ -66,7 +73,7 @@ class AuthManager:
     
     def is_entra_configured(self) -> bool:
         """Check if Entra ID is properly configured"""
-        return bool(self.client_id and self.client_secret and self.tenant_id and self.app)
+        return bool(self.client_id and self.client_secret and self.tenant_id and self.app and MSAL_AVAILABLE)
     
     def get_auth_url(self) -> str:
         """Get Entra ID authentication URL"""
@@ -285,6 +292,18 @@ class AuthManager:
         """Logout current user"""
         if 'user' in st.session_state:
             del st.session_state.user
+        
+        # Clear all session state related to user
+        keys_to_remove = []
+        for key in st.session_state.keys():
+            if key.startswith('user') or key in ['selected_projects', 'dashboard_editor']:
+                keys_to_remove.append(key)
+        
+        for key in keys_to_remove:
+            if key in st.session_state:
+                del st.session_state[key]
+        
+        # Force a complete rerun
         st.rerun()
     
     def show_user_info(self):

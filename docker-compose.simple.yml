@@ -1,13 +1,13 @@
 version: '3.8'
 
 services:
-  streamlit-dashboard-test:
+  streamlit-dashboard-simple:
     build:
       context: .
-      dockerfile: Dockerfile.test
-    container_name: sql-server-dashboard-test
+      dockerfile: Dockerfile.simple
+    container_name: sql-server-dashboard-simple
     ports:
-      - "8502:8501"  # Different port for test environment
+      - "8503:8501"  # Different port for simple environment
     environment:
       # TEST MODE - No SQL Server or Entra ID required
       - TEST_MODE=true
@@ -29,7 +29,7 @@ services:
       - ./logs:/app/logs
     
     networks:
-      - test-dashboard-network
+      - simple-dashboard-network
     
     restart: unless-stopped
     
@@ -56,13 +56,11 @@ services:
       - "environment=test"
       - "purpose=demo"
       - "project=sql-server-dashboard"
+      - "type=simplified"
 
 networks:
-  test-dashboard-network:
+  simple-dashboard-network:
     driver: bridge
     labels:
       - "environment=test"
-
-volumes:
-  test-cache-data:
-  test-logs-data:
+      - "type=simplified"

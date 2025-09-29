@@ -98,7 +98,7 @@ class TestDatabaseConfig:
         self.time_entries_df = pd.DataFrame(entries)
         self.create_aggregated_data()
     
-    def create_aggregated_data(self):
+    def create_aggregated_data(self, hours_column: str = "FaktStd"):
         """Create aggregated data from time entries"""
         if self.time_entries_df.empty:
             return
@@ -106,7 +106,7 @@ class TestDatabaseConfig:
         self.aggregated_df = self.time_entries_df.groupby([
             'Projekt', 'ProjektNr', 'Kundenname', 'Verwendung'
         ]).agg({
-            'Zeit': 'sum',
+            hours_column: 'sum',  # Use the specified column
             'Name': 'count',
             'Datum': ['min', 'max']
         }).round(2)
@@ -182,12 +182,26 @@ class TestDatabaseConfig:
         
         return df
     
-    def get_aggregated_data_mock(self, params: Optional[tuple] = None) -> pd.DataFrame:
+    def get_aggregated_data_mock(self, params: Optional[tuple] = None, hours_column: str = "FaktStd") -> pd.DataFrame:
         """Mock aggregated data"""
-        if self.aggregated_df.empty:
+        if self.time_entries_df.empty:
             return pd.DataFrame()
         
-        df = self.aggregated_df.copy()
+        # Recreate aggregated data with the specified hours column
+        aggregated_df = self.time_entries_df.groupby([
+            'Projekt', 'ProjektNr', 'Kundenname', 'Verwendung'
+        ]).agg({
+            hours_column: 'sum',  # Use the specified column
+            'Name': 'count',
+            'Datum': ['min', 'max']
+        }).round(2)
+        
+        # Flatten column names
+        aggregated_df.columns = ['ActualHours', 'EntryCount', 'FirstEntry', 'LastEntry']
+        aggregated_df = aggregated_df.reset_index()
+        aggregated_df['Activity'] = aggregated_df['Verwendung']
+        
+        df = aggregated_df.copy()
         
         # Apply project filtering
         if params and len(params) > 0:
@@ -218,7 +232,7 @@ class TestDatabaseConfig:
         
         return self.get_time_entries_mock(tuple(params))
     
-    def get_aggregated_data(self, projects: list, filters: Dict[str, Any] = None) -> pd.DataFrame:
+    def get_aggregated_data(self, projects: list, filters: Dict[str, Any] = None, hours_column: str = "FaktStd") -> pd.DataFrame:
         """Get aggregated time data by activity"""
         params = list(projects)
         
@@ -229,7 +243,7 @@ class TestDatabaseConfig:
             if filters.get('month'):
                 params.append(filters['month'])
         
-        return self.get_aggregated_data_mock(tuple(params))
+        return self.get_aggregated_data_mock(tuple(params), hours_column)
     
     def get_data_info(self) -> Dict[str, Any]:
         """Get information about loaded dummy data"""

@@ -125,6 +125,17 @@ class FilterManager:
         )
         return search_term.strip()
     
+    def hours_column_selector(self) -> str:
+        """Select which column to use for actual hours"""
+        hours_column = st.selectbox(
+            "⏱️ Stunden-Quelle",
+            options=["FaktStd", "Zeit"],
+            index=0,  # FaktStd as default
+            help="Wählen Sie welche Spalte für Iststunden verwendet werden soll",
+            key="hours_column_selector"
+        )
+        return hours_column
+    
     def apply_filters(self, df: pd.DataFrame, filters: Dict[str, Any]) -> pd.DataFrame:
         """Apply all filters to DataFrame"""
         if df.empty:

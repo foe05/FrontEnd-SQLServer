@@ -1,5 +1,5 @@
 # Multi-stage build for optimized Docker image
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Set build arguments
 ARG DEBIAN_FRONTEND=noninteractive
@@ -14,8 +14,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Microsoft ODBC Driver for SQL Server
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+    && curl -fsSL https://packages.microsoft.com/config/debian/11/prod.list | tee /etc/apt/sources.list.d/mssql-release.list \
+    && echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" | tee /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
@@ -44,8 +45,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Microsoft ODBC Driver for SQL Server (runtime)
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+    && curl -fsSL https://packages.microsoft.com/config/debian/11/prod.list | tee /etc/apt/sources.list.d/mssql-release.list \
+    && echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/11/prod bullseye main" | tee /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
@@ -63,17 +65,11 @@ WORKDIR /app
 # Copy application code
 COPY --chown=streamlit:streamlit . /app/
 
-# Create cache directory with proper permissions
-RUN mkdir -p /app/cache /app/logs \
-    && chown -R streamlit:streamlit /app/cache /app/logs
+# Create directories with proper permissions (as root before switching user)
+RUN mkdir -p /app/cache /app/logs /home/streamlit/.streamlit \
+    && chown -R streamlit:streamlit /app/cache /app/logs /home/streamlit
 
-# Switch to non-root user
-USER streamlit
-
-# Create Streamlit config directory
-RUN mkdir -p /home/streamlit/.streamlit
-
-# Create Streamlit configuration
+# Create Streamlit configuration (as root)
 RUN echo '[server]\n\
 port = 8501\n\
 address = "0.0.0.0"\n\
@@ -89,7 +85,11 @@ base = "light"\n\
 primaryColor = "#0066cc"\n\
 backgroundColor = "#ffffff"\n\
 secondaryBackgroundColor = "#f0f2f6"\n\
-textColor = "#262730"' > /home/streamlit/.streamlit/config.toml
+textColor = "#262730"' > /home/streamlit/.streamlit/config.toml \
+    && chown -R streamlit:streamlit /home/streamlit/.streamlit
+
+# Switch to non-root user
+USER streamlit
 
 # Expose port
 EXPOSE 8501

@@ -1,0 +1,66 @@
+# Simplified Dockerfile for TEST MODE without SQL Server dependencies
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    STREAMLIT_SERVER_PORT=8501 \
+    STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    STREAMLIT_SERVER_HEADLESS=true \
+    TEST_MODE=true
+
+# Install minimal runtime dependencies (no ODBC needed for test mode)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Create non-root user for security
+RUN groupadd -r streamlit && useradd -r -g streamlit streamlit
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY --chown=streamlit:streamlit . /app/
+
+# Create directories with proper permissions (as root before switching user)
+RUN mkdir -p /app/cache /app/logs /home/streamlit/.streamlit \
+    && chown -R streamlit:streamlit /app/cache /app/logs /home/streamlit
+
+# Create Streamlit configuration (as root)
+RUN echo '[server]\n\
+port = 8501\n\
+address = "0.0.0.0"\n\
+headless = true\n\
+enableCORS = false\n\
+enableXsrfProtection = false\n\
+\n\
+[browser]\n\
+gatherUsageStats = false\n\
+\n\
+[theme]\n\
+base = "light"\n\
+primaryColor = "#0066cc"\n\
+backgroundColor = "#ffffff"\n\
+secondaryBackgroundColor = "#f0f2f6"\n\
+textColor = "#262730"' > /home/streamlit/.streamlit/config.toml \
+    && chown -R streamlit:streamlit /home/streamlit/.streamlit
+
+# Switch to non-root user
+USER streamlit
+
+# Expose port
+EXPOSE 8501
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=30s \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+# Run the application in TEST MODE
+CMD ["streamlit", "run", "app.py"]

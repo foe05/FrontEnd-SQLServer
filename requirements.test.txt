@@ -1,0 +1,12 @@
+streamlit==1.29.0
+pandas==2.1.4
+openpyxl==3.1.2
+python-dotenv==1.0.0
+requests==2.31.0
+numpy==1.26.2
+plotly==5.17.0
+# msal is not needed for test mode
+# pyodbc is not needed for test mode
+# streamlit-authenticator is not needed for test mode
+# redis is not needed for test mode
+# sqlalchemy is not needed for test mode

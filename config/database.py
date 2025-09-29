@@ -2,12 +2,19 @@
 Database configuration and connection management for SQL Server
 """
 import os
-import pyodbc
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 from typing import Optional, Dict, Any
 import logging
+
+# Import pyodbc only if not in test mode
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    PYODBC_AVAILABLE = False
+    logging.warning("pyodbc not available - using fallback mode")
 
 # Load environment variables
 load_dotenv()
@@ -42,6 +49,10 @@ class DatabaseConfig:
     
     def test_connection(self) -> bool:
         """Test database connection"""
+        if not PYODBC_AVAILABLE:
+            logging.warning("pyodbc not available - connection test skipped")
+            return False
+            
         try:
             with pyodbc.connect(self.connection_string, timeout=5) as conn:
                 cursor = conn.cursor()
@@ -54,6 +65,11 @@ class DatabaseConfig:
     @st.cache_data(ttl=300)  # Cache for 5 minutes
     def execute_query(_self, query: str, params: Optional[tuple] = None) -> pd.DataFrame:
         """Execute SQL query and return DataFrame"""
+        if not PYODBC_AVAILABLE:
+            logging.warning("pyodbc not available - returning empty DataFrame")
+            st.warning("Database connection not available - using test mode")
+            return pd.DataFrame()
+            
         try:
             with pyodbc.connect(_self.connection_string) as conn:
                 if params:
@@ -132,7 +148,7 @@ class DatabaseConfig:
         
         return self.execute_query(query, tuple(params))
     
-    def get_aggregated_data(self, projects: list, filters: Dict[str, Any] = None) -> pd.DataFrame:
+    def get_aggregated_data(self, projects: list, filters: Dict[str, Any] = None, hours_column: str = "FaktStd") -> pd.DataFrame:
         """Get aggregated time data by activity (Verwendung)"""
         if not projects:
             return pd.DataFrame()
@@ -162,14 +178,14 @@ class DatabaseConfig:
             [ProjektNr],
             [Kundenname],
             [Verwendung] as Activity,
-            SUM(CAST([Zeit] as FLOAT)) as ActualHours,
+            SUM(CAST([{hours_column}] as FLOAT)) as ActualHours,
             COUNT(*) as EntryCount,
             MIN([Datum]) as FirstEntry,
             MAX([Datum]) as LastEntry
         FROM ZV
         WHERE {where_clause}
         GROUP BY [Projekt], [ProjektNr], [Kundenname], [Verwendung]
-        ORDER BY [Projekt], SUM(CAST([Zeit] as FLOAT)) DESC
+        ORDER BY [Projekt], SUM(CAST([{hours_column}] as FLOAT)) DESC
         """
         
         return self.execute_query(query, tuple(params))

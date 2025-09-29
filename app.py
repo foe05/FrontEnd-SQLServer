@@ -72,16 +72,22 @@ class TimeTrackingApp:
         for projekt in df['Projekt'].unique():
             projekt_df = df[df['Projekt'] == projekt]
             
+            # Calculate total target hours for this project
+            project_total_target = sum(all_targets.get(projekt, {}).values())
+            
             for activity in projekt_df['Activity'].unique():
                 activity_df = projekt_df[projekt_df['Activity'] == activity]
                 
                 actual_hours = activity_df['ActualHours'].sum()
                 
-                # Get target hours from cache/filesystem
-                target_hours = all_targets.get(projekt, {}).get(activity, 80.0)
+                # Get target hours from cache/filesystem (default: 0.0)
+                target_hours = all_targets.get(projekt, {}).get(activity, 0.0)
                 
                 # Calculate fulfillment percentage
                 fulfillment_pct = (actual_hours / target_hours * 100) if target_hours > 0 else 0
+                
+                # Calculate percentage of total project target
+                project_percentage = (target_hours / project_total_target * 100) if project_total_target > 0 else 0
                 
                 # Determine status
                 status = self.calculate_fulfillment_status(actual_hours, target_hours)
@@ -90,6 +96,7 @@ class TimeTrackingApp:
                     'Projekt': projekt,
                     'Tätigkeit/Activity': activity,
                     'Sollstunden': target_hours,
+                    'Anteil am Projekt (%)': round(project_percentage, 1),
                     'Erfüllungsstand (%)': round(fulfillment_pct, 1),
                     'Status': status,
                     'Iststunden': round(actual_hours, 1),
@@ -97,6 +104,48 @@ class TimeTrackingApp:
                 })
         
         return pd.DataFrame(dashboard_data)
+    
+    def create_project_summary(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create project summary with total target vs actual hours"""
+        if df.empty:
+            return pd.DataFrame()
+        
+        # Load existing target hours
+        all_targets = self.load_target_hours()
+        
+        summary_data = []
+        
+        # Group by project
+        for projekt in df['Projekt'].unique():
+            projekt_df = df[df['Projekt'] == projekt]
+            
+            # Calculate total actual hours for this project
+            total_actual_hours = projekt_df['ActualHours'].sum()
+            
+            # Calculate total target hours for this project
+            project_targets = all_targets.get(projekt, {})
+            total_target_hours = sum(project_targets.values()) if project_targets else 0.0
+            
+            # Calculate project fulfillment
+            project_fulfillment_pct = (total_actual_hours / total_target_hours * 100) if total_target_hours > 0 else 0
+            
+            # Determine project status
+            project_status = self.calculate_fulfillment_status(total_actual_hours, total_target_hours)
+            
+            # Get customer name
+            kunde = projekt_df['Kundenname'].iloc[0] if len(projekt_df) > 0 else ''
+            
+            summary_data.append({
+                'Projekt': projekt,
+                'Kunde': kunde,
+                'Sollstunden Gesamt': round(total_target_hours, 1),
+                'Iststunden Gesamt': round(total_actual_hours, 1),
+                'Erfüllungsstand (%)': round(project_fulfillment_pct, 1),
+                'Status': project_status,
+                'Anzahl Tätigkeiten': projekt_df['Activity'].nunique()
+            })
+        
+        return pd.DataFrame(summary_data)
     
     def show_editable_dashboard(self, dashboard_df: pd.DataFrame):
         """Show the main dashboard with editable target hours"""
@@ -141,6 +190,11 @@ class TimeTrackingApp:
                 step=0.5,
                 format="%.1f STD"
             ),
+            'Anteil am Projekt (%)': st.column_config.NumberColumn(
+                'Anteil am Projekt (%)',
+                help="Prozentsatz dieser Tätigkeit am Gesamtprojekt",
+                format="%.1f%%"
+            ),
             'Erfüllungsstand (%)': st.column_config.NumberColumn(
                 'Erfüllungsstand (%)',
                 help="Automatisch berechnet: Ist/Soll * 100",
@@ -163,7 +217,7 @@ class TimeTrackingApp:
             column_config=column_config,
             use_container_width=True,
             key="dashboard_editor",
-            disabled=['Projekt', 'Tätigkeit/Activity', 'Erfüllungsstand (%)', 'Status', 'Iststunden', 'Kunde']
+            disabled=['Projekt', 'Tätigkeit/Activity', 'Anteil am Projekt (%)', 'Erfüllungsstand (%)', 'Status', 'Iststunden', 'Kunde']
         )
         
         # Process any changes in target hours
@@ -228,6 +282,9 @@ class TimeTrackingApp:
             # Additional filters
             search_term = filter_manager.search_filter()
             
+            # Hours column selector
+            hours_column = filter_manager.hours_column_selector()
+            
             # Reset filters button
             if st.button("🔄 Filter zurücksetzen"):
                 filter_manager.reset_filters()
@@ -252,7 +309,7 @@ class TimeTrackingApp:
         try:
             with st.spinner("Lade Daten..."):
                 # Get aggregated time data
-                raw_data = db_config.get_aggregated_data(selected_projects, date_filters)
+                raw_data = db_config.get_aggregated_data(selected_projects, date_filters, hours_column)
                 
                 if raw_data.empty:
                     st.info("Keine Daten für die ausgewählten Filter gefunden.")
@@ -268,12 +325,52 @@ class TimeTrackingApp:
                 # Create dashboard table
                 dashboard_df = self.create_dashboard_table(filtered_data)
                 
+                # Create project summary
+                project_summary_df = self.create_project_summary(filtered_data)
+                
                 # Show filter summary
                 filter_manager.show_filter_summary({
                     **date_filters,
                     'selected_projects': selected_projects,
                     'search_term': search_term
                 })
+                
+                # Show project summary first
+                if not project_summary_df.empty:
+                    st.subheader("📊 Projekt-Zusammenfassung")
+                    st.markdown("Übersicht über Soll- vs. Ist-Stunden pro Projekt")
+                    
+                    # Configure project summary columns
+                    project_summary_config = {
+                        'Sollstunden Gesamt': st.column_config.NumberColumn(
+                            'Sollstunden Gesamt',
+                            help="Summe aller verkauften Stunden für dieses Projekt",
+                            format="%.1f STD"
+                        ),
+                        'Iststunden Gesamt': st.column_config.NumberColumn(
+                            'Iststunden Gesamt',
+                            help="Summe aller gebuchten Stunden für dieses Projekt",
+                            format="%.1f STD"
+                        ),
+                        'Erfüllungsstand (%)': st.column_config.NumberColumn(
+                            'Erfüllungsstand (%)',
+                            help="Gesamterfüllungsstand des Projekts",
+                            format="%.1f%%"
+                        ),
+                        'Status': st.column_config.TextColumn(
+                            'Status',
+                            help="🟢 ≤100% | 🟡 100-110% | 🔴 >110%"
+                        )
+                    }
+                    
+                    st.dataframe(
+                        project_summary_df,
+                        column_config=project_summary_config,
+                        use_container_width=True,
+                        key="project_summary"
+                    )
+                
+                st.markdown("---")  # Separator
                 
                 # Show main dashboard
                 final_dashboard = self.show_editable_dashboard(dashboard_df)
