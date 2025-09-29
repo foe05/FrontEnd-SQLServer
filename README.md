@@ -4,20 +4,33 @@ Ein Streamlit-basiertes Dashboard für die Analyse von SQL Server Zeiterfassungs
 
 ## 🚀 Features
 
+- **🧪 TEST-MODUS**: Sofortiger Start mit Dummy-Daten, keine Setup-Zeit
 - **Benutzerauthentifizierung**: Microsoft Entra ID mit lokaler Entwicklungs-Fallback
-- **Projektfilter**: Benutzer-spezifische Projektzugriffe
-- **Editierbare Sollstunden**: Bearbeitbare Zielwerte pro Tätigkeit
+- **📊 Projekt-Zusammenfassung**: Soll vs. Ist-Stunden Übersicht pro Projekt
+- **Editierbare Sollstunden**: Bearbeitbare Zielwerte pro Tätigkeit (Default: 0)
+- **📈 Prozentuale Anteile**: Anteil jeder Tätigkeit am Gesamtprojekt
+- **⏱️ Flexible Stunden-Quelle**: Wählbar zwischen "Zeit" und "FaktStd" Spalten
 - **Status-Ampel**: Visueller Erfüllungsstand (🟢 🟡 🔴)
-- **Excel Export**: Formatierte Datenexporte
-- **Docker Support**: Container-ready Deployment
+- **Projektfilter**: Benutzer-spezifische Projektzugriffe mit Datum/Such-Filtern
+- **Excel Export**: Formatierte Datenexporte für Zusammenfassung und Details
+- **Docker Support**: Multi-Stage Container (Einfach/Test/Production)
 - **Health Monitoring**: System-Health-Check Dashboard
 
 ## 📊 Dashboard Ansicht
 
-| Tätigkeit/Activity | Sollstunden (verkauft) | Erfüllungsstand (%) | Status | Iststunden |
-|--------------------|------------------------|-------------------|--------|-------------|
-| Deployment | [Editable: 80] | 25% | 🟢 Buchbar | 20 STD |
-| Design/Requirements | [Editable: 80] | 125% | 🔴 Überbucht | 100 STD |
+### Projekt-Zusammenfassung
+| Projekt | Kunde | Sollstunden Gesamt | Iststunden Gesamt | Erfüllungsstand (%) | Status |
+|---------|-------|-------------------|------------------|-------------------|--------|
+| P24SAN06 | INTEND Geoinformatik | 120.0 STD | 87.5 STD | 72.9% | 🟢 Buchbar |
+| P24XYZ01 | Mustermann AG | 80.0 STD | 95.0 STD | 118.8% | 🔴 Überbucht |
+
+### Tätigkeits-Details
+| Tätigkeit/Activity | Sollstunden | Anteil am Projekt (%) | Erfüllungsstand (%) | Status | Iststunden* |
+|--------------------|-------------|---------------------|-------------------|--------|-------------|
+| Implementierung | [Editable: 60] | 50.0% | 83.3% | 🟢 Buchbar | 50.0 STD |
+| Testing & QA | [Editable: 30] | 25.0% | 166.7% | 🔴 Überbucht | 50.0 STD |
+
+*Wählbar: "Zeit" oder "FaktStd" Spalte
 
 ## 🛠️ Installation
 
@@ -57,6 +70,7 @@ http://localhost:8501  # Lokal
 - ✅ Keine Entra ID Setup erforderlich  
 - ✅ Automatische Anmeldung mit Test-Benutzern
 - ✅ Realistische Dummy-Daten bereits vorhanden
+- ✅ Alle Features sofort testbar (Sollstunden editieren, Spalten wechseln, etc.)
 
 ### Lokale Entwicklung (Vollständig)
 
@@ -153,21 +167,26 @@ Erwartet SQL Server Tabelle `ZV` mit folgenden Spalten:
 
 ### Authentifizierung
 
-1. **Entra ID**: Automatische Weiterleitung zu Microsoft Login
-2. **Lokal**: Entwicklungsumgebung mit Test-Benutzern
+1. **TEST-MODUS**: Automatische Anmeldung, Benutzer wählbar
+2. **Entra ID**: Automatische Weiterleitung zu Microsoft Login
+3. **Lokal**: Entwicklungsumgebung mit Test-Benutzern
+4. **Abmeldung**: Funktioniert korrekt, kehrt zum Login zurück
 
 ### Dashboard Navigation
 
-1. **Projektauswahl**: Dropdown mit verfügbaren Projekten
-2. **Filter**: Jahr/Monat/Quartal und Textsuche
-3. **Tabelle**: Editierbare Sollstunden, automatischer Erfüllungsstand
-4. **Export**: Excel-Download mit Formatierung
+1. **Projekt-Zusammenfassung**: Übersicht Soll vs. Ist pro Projekt
+2. **Projektauswahl**: Multiselect mit verfügbaren Projekten  
+3. **Filter**: Jahr/Monat/Quartal, Textsuche, Stunden-Quelle auswählen
+4. **Tätigkeits-Tabelle**: Editierbare Sollstunden mit Prozent-Anteilen
+5. **Export**: Excel-Download für Zusammenfassung und Details
 
-### Sollstunden bearbeiten
+### Key Features nutzen
 
-- Klicken Sie auf die Sollstunden-Spalte
-- Neue Werte werden automatisch gespeichert
-- Erfüllungsstand wird automatisch neu berechnet
+- **Sollstunden editieren**: Klick in Sollstunden-Spalte, Default: 0
+- **Stunden-Quelle wechseln**: Sidebar → "Zeit" oder "FaktStd" wählen
+- **Prozent-Anteile**: Automatische Berechnung des Projekt-Anteils
+- **Status-Ampeln**: 🟢 ≤100% | 🟡 100-110% | 🔴 >110%
+- **Live-Update**: Änderungen aktualisieren sofort alle Berechnungen
 
 ## 🔍 Health Check
 

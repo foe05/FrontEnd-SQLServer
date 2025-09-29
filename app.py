@@ -8,7 +8,15 @@ import json
 from datetime import datetime
 from typing import Dict, Any, List
 
-# Import custom components
+# Page configuration MUST be first Streamlit command
+st.set_page_config(
+    page_title="SQL Server Dashboard",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Import custom components AFTER page config
 from components.auth import auth_manager
 from components.filters import filter_manager
 from components.export import excel_exporter
@@ -16,19 +24,13 @@ from utils.cache import cache_manager
 from utils.health import health_checker
 
 # Import database config based on environment
-if os.getenv('TEST_MODE', 'false').lower() == 'true':
+TEST_MODE = os.getenv('TEST_MODE', 'false').lower() == 'true'
+
+if TEST_MODE:
     from config.test_database import test_db_config as db_config
     st.sidebar.success("🧪 TEST-MODUS AKTIV")
 else:
     from config.database import db_config
-
-# Page configuration
-st.set_page_config(
-    page_title="SQL Server Dashboard",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 class TimeTrackingApp:
     """Main application class"""
