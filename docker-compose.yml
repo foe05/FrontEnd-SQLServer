@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  streamlit-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sql-server-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      # Database Configuration
+      - SQL_SERVER_HOST=${SQL_SERVER_HOST:-localhost}
+      - SQL_SERVER_DATABASE=${SQL_SERVER_DATABASE:-TimeTracking}
+      - SQL_SERVER_USERNAME=${SQL_SERVER_USERNAME}
+      - SQL_SERVER_PASSWORD=${SQL_SERVER_PASSWORD}
+      
+      # Entra ID Configuration (Optional)
+      - ENTRA_CLIENT_ID=${ENTRA_CLIENT_ID}
+      - ENTRA_CLIENT_SECRET=${ENTRA_CLIENT_SECRET}
+      - ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
+      
+      # Streamlit Configuration
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    
+    volumes:
+      # Mount configuration files
+      - ./config/users.json:/app/config/users.json:ro
+      
+      # Mount cache directory for persistent target hours
+      - ./cache:/app/cache
+      
+      # Mount logs directory
+      - ./logs:/app/logs
+    
+    networks:
+      - dashboard-network
+    
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Optional: Redis for enhanced caching (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: dashboard-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - dashboard-network
+  #   restart: unless-stopped
+
+networks:
+  dashboard-network:
+    driver: bridge
+
+volumes:
+  # Uncomment if using Redis
+  # redis-data:
+  cache-data:
+  logs-data:

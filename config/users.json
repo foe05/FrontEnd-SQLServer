@@ -1,0 +1,17 @@
+{
+  "users": {
+    "admin@intend.com": {
+      "projects": ["P24SAN06", "P24XYZ01", "P24ABC02"],
+      "permissions": ["read", "export", "edit_targets", "admin"]
+    },
+    "user@intend.com": {
+      "projects": ["P24SAN06", "P24XYZ01"],
+      "permissions": ["read", "export", "edit_targets"]
+    },
+    "viewer@intend.com": {
+      "projects": ["P24SAN06"],
+      "permissions": ["read", "export"]
+    }
+  },
+  "default_permissions": ["read"]
+}
