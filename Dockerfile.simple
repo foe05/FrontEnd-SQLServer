@@ -26,9 +26,12 @@ WORKDIR /app
 # Copy application code
 COPY . /app/
 
+# Ensure test_data directory exists and has correct permissions
+RUN ls -la /app/test_data/ || echo "Warning: test_data directory not found"
+
 # Create Streamlit config in app directory (avoid permission issues)
 RUN mkdir -p /app/.streamlit && \
-    echo '[server]\nport = 8501\naddress = "0.0.0.0"\nheadless = true\nenableCORS = false\nenableXsrfProtection = false\n[browser]\ngatherUsageStats = false' > /app/.streamlit/config.toml
+    echo '[server]\nport = 8501\naddress = "0.0.0.0"\nheadless = true\nenableCORS = true\nenableXsrfProtection = false\nallowRunOnSave = false\n[browser]\ngatherUsageStats = false\n[global]\nembedOptions = ["frameless"]' > /app/.streamlit/config.toml
 
 # Set Streamlit config path
 ENV STREAMLIT_CONFIG_DIR=/app/.streamlit

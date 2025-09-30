@@ -98,7 +98,7 @@ docker run -it -p 8501:8501 -e TEST_MODE=true test-dashboard bash
 ### Windows PowerShell:
 ```powershell
 # 1. Ins Projektverzeichnis
-cd "C:\Users\johannesb\OneDrive - INTEND Geoinformatik GmbH\Dokumente\4 - Sideprojects DEV\GITHUB\FrontEnd-SQLServer\FrontEnd-SQLServer"
+cd "C:\Path\To\Your\Project\FrontEnd-SQLServer"
 
 # 2. Python Module installieren
 python -m pip install streamlit pandas openpyxl python-dotenv requests numpy plotly

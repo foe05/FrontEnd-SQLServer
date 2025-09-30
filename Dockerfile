@@ -74,11 +74,15 @@ RUN echo '[server]\n\
 port = 8501\n\
 address = "0.0.0.0"\n\
 headless = true\n\
-enableCORS = false\n\
+enableCORS = true\n\
 enableXsrfProtection = false\n\
+allowRunOnSave = false\n\
 \n\
 [browser]\n\
 gatherUsageStats = false\n\
+\n\
+[global]\n\
+embedOptions = ["frameless"]\n\
 \n\
 [theme]\n\
 base = "light"\n\

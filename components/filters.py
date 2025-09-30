@@ -131,8 +131,7 @@ class FilterManager:
             "⏱️ Stunden-Quelle",
             options=["FaktStd", "Zeit"],
             index=0,  # FaktStd as default
-            help="Wählen Sie welche Spalte für Iststunden verwendet werden soll",
-            key="hours_column_selector"
+            help="Wählen Sie welche Spalte für Iststunden verwendet werden soll"
         )
         return hours_column
     

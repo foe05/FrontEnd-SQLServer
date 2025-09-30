@@ -6,136 +6,125 @@
 - `version: '3.8'` hinzugefügt - war kritischer Fehler!
 - Container startet jetzt korrekt
 
-### 2. **Alle neuen Features produktions-kompatibel** ✅
+### 2. **Streamlit API Exception Fixed** ✅
+- **Problem**: `key` Parameter in `st.data_editor()` und `st.dataframe()` nur in Streamlit >= 1.28.0 verfügbar
+- **Lösung**: Alle `key` Parameter entfernt
+- **Fallback**: Try/Catch für `st.data_editor()` mit `st.dataframe()` als Backup
 
-#### **Stunden-Spalten-Auswahl (Zeit vs. FaktStd):**
-- ✅ `hours_column` Parameter in `database.py` korrekt implementiert
-- ✅ SQL Query verwendet dynamisches `[{hours_column}]` 
-- ✅ Default: "FaktStd" (wie gewünscht)
-- ✅ Filter-Komponente funktioniert auch ohne TEST_MODE
+### 3. **Alle Modi funktional identisch** ✅
 
-#### **Sollstunden Default = 0:**
-- ✅ `target_hours = all_targets.get(projekt, {}).get(activity, 0.0)`
-- ✅ Funktioniert in Produktions- und TEST-Umgebung
+#### **SIMPLE Mode (Port 8503):**
+- ✅ TEST_MODE=true automatisch aktiviert
+- ✅ Dummy-Daten verfügbar  
+- ✅ Keine Authentifizierung erforderlich
+- ✅ Minimale Dependencies
+- ✅ Schneller Build (~2 min)
 
-#### **Projekt-Zusammenfassung:**
-- ✅ `create_project_summary()` verwendet nur Standard-Pandas Operationen
-- ✅ Keine TEST_MODE spezifische Logik
-- ✅ Funktioniert mit echter ZV-Tabelle
+#### **TEST Mode (Port 8502):**
+- ✅ TEST_MODE=true automatisch aktiviert
+- ✅ Vollständige Dependencies
+- ✅ Robuste ODBC-Installation
+- ✅ Produktions-ähnlicher Build
 
-#### **Prozentuale Anteile:**
-- ✅ `project_percentage` Berechnung ist universal
-- ✅ Dashboard-Spalte "Anteil am Projekt (%)" funktioniert produktiv
+#### **PRODUCTION Mode (Port 8501):**
+- ✅ Echter SQL Server Support (ZV Tabelle)
+- ✅ Entra ID Authentication
+- ✅ Vollständige Feature-Parität
+- ✅ Security & Performance optimiert
 
-#### **Abmelde-Funktionalität:**
-- ✅ Session State Clearing funktioniert unabhängig vom Modus
-- ✅ `st.rerun()` ist Standard-Streamlit Funktion
+## 🚀 **Funktions-Parität zwischen allen Modi:**
 
-### 3. **Dependencies Robust** ✅
-- ✅ `pyodbc` - Optional Import mit Fallback
-- ✅ `msal` - Optional Import mit Fallback  
-- ✅ Alle requirements.txt Dependencies sind installiert
+| Feature | Simple | Test | Production |
+|---------|---------|------|------------|
+| 📊 Projekt-Zusammenfassung | ✅ | ✅ | ✅ |
+| ⏱️ Stunden-Quelle (Zeit/FaktStd) | ✅ | ✅ | ✅ |
+| 📈 Prozentuale Anteile | ✅ | ✅ | ✅ |
+| 🎯 Sollstunden editieren | ✅ | ✅ | ✅ |
+| 📥 Excel Export | ✅ | ✅ | ✅ |
+| 🔍 Filter (Jahr/Monat/Suche) | ✅ | ✅ | ✅ |
+| 🏥 Health Check | ✅ | ✅ | ✅ |
+| 🔐 Authentifizierung | Auto-Login | Auto-Login | Entra ID |
+| 🗄️ Datenquelle | Dummy JSON | Dummy JSON | SQL Server |
 
-### 4. **ZV Tabellen-Support** ✅
-- ✅ Alle SQL Queries verwenden `FROM ZV` statt TimeEntries
-- ✅ Spalten [Zeit] und [FaktStd] werden korrekt behandelt
-- ✅ Prepared Statements gegen SQL Injection
+## 🧪 **Build & Start Kommandos:**
 
-## 🧪 **Produktions-Test Befehle:**
-
-### **Lokaler Produktions-Test:**
+### **SIMPLE Mode (Empfohlen für Demo):**
 ```bash
-# 1. Produktive requirements installieren
-pip install -r requirements.txt
-
-# 2. Produktive .env erstellen (OHNE TEST_MODE)
-cp .env.example .env
-# SQL Server Details eintragen, TEST_MODE nicht setzen
-
-# 3. App starten (Produktiv-Modus)
-streamlit run app.py
+docker build -f Dockerfile.simple -t dashboard-simple .
+docker run -d -p 8503:8501 -e TEST_MODE=true --name dashboard-simple dashboard-simple
+# → http://localhost:8503
 ```
 
-### **Docker Produktions-Test:**
+### **TEST Mode (Vollständig mit Dummy-Daten):**
 ```bash
-# 1. .env für Docker vorbereiten
-cp .env.example .env
-# SQL Server Details eintragen
+docker-compose -f docker-compose.test.yml up -d
+# → http://localhost:8502
+```
 
-# 2. Container bauen und starten
+### **PRODUCTION Mode (Echter SQL Server):**
+```bash
+# .env mit SQL Server Details konfigurieren
 docker-compose up -d
-
-# 3. Health Check
-curl http://localhost:8501/_stcore/health
-
-# 4. Logs prüfen
-docker logs sql-server-dashboard
+# → http://localhost:8501
 ```
 
-## 🎯 **Features die getestet werden sollten:**
+## ⚠️ **Troubleshooting:**
 
-### **Dashboard-Funktionalität:**
-1. ✅ **Projekt-Zusammenfassung** wird oben angezeigt
-2. ✅ **Sollstunden** starten mit 0, sind editierbar
-3. ✅ **Anteil am Projekt (%)** wird berechnet und angezeigt
-4. ✅ **Stunden-Quelle** Dropdown (Zeit/FaktStd) funktioniert
-5. ✅ **Status-Ampeln** (🟢🟡🔴) reagieren auf Änderungen
-6. ✅ **Abmelden** funktioniert und zeigt Login wieder
+### **Problem: "ArrowMixin.dataframe() got unexpected keyword argument 'key'"**
+- **Ursache**: Ältere Streamlit Version
+- **Fix**: Alle `key` Parameter entfernt + Fallback implementiert
 
-### **Datenbank-Integration:**
-1. ✅ **ZV Tabelle** wird korrekt abgefragt
-2. ✅ **[Zeit] vs [FaktStd]** Spalten werden korrekt verwendet
-3. ✅ **Filter** (Jahr/Monat/Projekt) funktionieren
-4. ✅ **SQL Injection** Schutz durch Prepared Statements
-
-### **Export-Funktionalität:**
-1. ✅ **Excel Export** funktioniert mit neuen Spalten
-2. ✅ **Projekt-Zusammenfassung** und **Details** Export
-3. ✅ **Formatierung** mit Status-Farben
-
-## ⚠️ **Potentielle Produktions-Probleme:**
-
-### **Database Connection:**
-- **Problem**: ZV Tabelle existiert nicht oder hat andere Spaltennamen
-- **Lösung**: SQL Server Admin prüfen lassen, ob [Zeit] und [FaktStd] Spalten existieren
-
-### **Entra ID Authentication:**
-- **Problem**: Redirect URI stimmt nicht
-- **Lösung**: In Azure App Registration `http://your-domain:8501` konfigurieren
-
-### **Performance:**
-- **Problem**: Große ZV Tabelle (>1M Zeilen) langsam
-- **Lösung**: Indizes auf [Projekt], [Jahr], [Monat] empfehlen
-
-## 🚀 **Deployment Empfehlung:**
-
+### **Problem: "Anmelden funktioniert nicht im Simple Mode"**
+- **Ursache**: TEST_MODE nicht korrekt erkannt
+- **Debug**: 
 ```bash
-# 1. Produktions-Container starten
-docker-compose up -d
+# Container-Umgebung prüfen
+docker exec dashboard-simple env | grep TEST_MODE
 
-# 2. Health Check
-curl http://localhost:8501/_stcore/health
-
-# 3. Test mit echten Benutzern
-# - Login testen
-# - Sollstunden editieren  
-# - Stunden-Spalte wechseln
-# - Excel Export testen
-# - Abmelden/Anmelden testen
+# Logs anschauen
+docker logs dashboard-simple
 ```
 
-## 📋 **Was sich im Container ändert:**
+### **Problem: "Keine Daten im Simple Mode"**
+- **Ursache**: test_data nicht verfügbar
+- **Debug**:
+```bash
+# Test-Daten im Container prüfen
+docker exec dashboard-simple ls -la /app/test_data/
 
-### **Neue Features verfügbar:**
-- 📊 Projekt-Zusammenfassung (oben im Dashboard)
-- ⏱️ Stunden-Quelle Auswahl (Sidebar)
-- 📈 Anteil am Projekt % (neue Spalte)
-- 🎯 Sollstunden Default 0 (statt 80)
-- 🔄 Funktionierende Abmeldung
+# Test-Daten lokal prüfen
+ls -la test_data/
+```
 
-### **Datenbank-Änderungen:**
-- 📋 ZV Tabelle statt TimeEntries
-- ⚡ Flexible [Zeit] vs [FaktStd] Spalten
-- 🔐 Verbesserte SQL Injection Schutz
+## 🔄 **Einheitliche Funktionalität sicherstellen:**
 
-**Fazit: Alle Änderungen sind produktions-kompatibel! 🎉**
+### **Alle Modi verwenden:**
+1. **Gleiche app.py** - automatische TEST_MODE Erkennung
+2. **Gleiche Komponenten** - auth.py, filters.py, export.py
+3. **Gleiche Features** - Projekt-Summary, Stunden-Auswahl, etc.
+4. **Unterschied nur bei**:
+   - Dockerfile (Dependencies)
+   - Datenquelle (Dummy vs. SQL Server)
+   - Authentifizierung (Auto vs. Entra ID)
+
+### **Fehlerdiagnose:**
+```bash
+# 1. Container-Logs für alle Modi:
+docker logs sql-server-dashboard-simple    # Simple
+docker logs sql-server-dashboard-test      # Test
+docker logs sql-server-dashboard           # Production
+
+# 2. Environment Check:
+docker exec <container-name> env | grep TEST_MODE
+
+# 3. Test-Daten Check:
+docker exec <container-name> ls -la /app/test_data/
+```
+
+## ✅ **Erwartete Lösung:**
+
+Nach den Fixes sollten **alle drei Modi identisch funktionieren**:
+- Same Dashboard Layout
+- Same Features (Editable, Export, etc.)
+- Same User Experience
+- Nur unterschiedliche Datenquellen

@@ -176,6 +176,15 @@ class AuthManager:
             user = self.authenticate_with_code(auth_code)
             if user:
                 st.session_state.user = user
+                # WICHTIG: OAuth-Query-Parameter entfernen um Re-Login zu verhindern
+                try:
+                    if 'code' in st.query_params:
+                        del st.query_params['code']
+                    if 'state' in st.query_params:
+                        del st.query_params['state']
+                except Exception:
+                    # Fallback für ältere Streamlit-Versionen
+                    st.experimental_set_query_params()
                 st.rerun()
             else:
                 st.error("Authentifizierung fehlgeschlagen")
@@ -236,6 +245,12 @@ class AuthManager:
         st.success("🚀 **TEST-UMGEBUNG AKTIV**")
         st.info("✨ Keine Authentifizierung erforderlich - Verwende Dummy-Daten")
         
+        # Initialize auto-login flags
+        if "_autologin_used" not in st.session_state:
+            st.session_state["_autologin_used"] = False
+        
+        force_select = st.session_state.get("force_test_user_selection", False)
+        
         # Show available test users
         available_users = list(self.users_config.get("users", {}).keys())
         
@@ -254,10 +269,16 @@ class AuthManager:
             )
         
         with col2:
-            auto_login = st.checkbox("Auto-Login", value=True, help="Automatisch anmelden")
+            # Auto-Login nur wenn nie benutzt und kein erzwungener Wechsel
+            auto_login = st.checkbox(
+                "Auto-Login", 
+                value=(not st.session_state["_autologin_used"] and not force_select),
+                help="Automatisch anmelden"
+            )
         
-        # Auto login or manual login
-        if auto_login or st.button("🧪 Test-Login", type="primary"):
+        # Login logic
+        if auto_login and not st.session_state.get('user') and not st.session_state["_autologin_used"] and not force_select:
+            # Auto-login on first visit only
             user = {
                 'email': selected_user,
                 'name': f"Test User ({selected_user.split('@')[0]})",
@@ -266,6 +287,21 @@ class AuthManager:
                 'test_mode': True
             }
             st.session_state.user = user
+            st.session_state["_autologin_used"] = True
+            st.rerun()
+        elif st.button("🧪 Test-Login", type="primary"):
+            # Manual login
+            user = {
+                'email': selected_user,
+                'name': f"Test User ({selected_user.split('@')[0]})",
+                'id': selected_user,
+                'access_token': 'test_mode_token',
+                'test_mode': True
+            }
+            st.session_state.user = user
+            st.session_state["_autologin_used"] = True
+            # Clear force selection flag after manual login
+            st.session_state.pop("force_test_user_selection", None)
             st.rerun()
         
         # Show test environment info
@@ -290,20 +326,27 @@ class AuthManager:
     
     def logout(self):
         """Logout current user"""
+        # Nutzerbezogene Keys entfernen
         if 'user' in st.session_state:
             del st.session_state.user
-        
-        # Clear all session state related to user
+
         keys_to_remove = []
-        for key in st.session_state.keys():
+        for key in list(st.session_state.keys()):
             if key.startswith('user') or key in ['selected_projects', 'dashboard_editor']:
                 keys_to_remove.append(key)
-        
+
         for key in keys_to_remove:
-            if key in st.session_state:
-                del st.session_state[key]
-        
-        # Force a complete rerun
+            st.session_state.pop(key, None)
+
+        # WICHTIG: OAuth-Parameter aus der URL entfernen, um Re-Login zu verhindern
+        try:
+            st.query_params.clear()  # neuere Streamlit-Version
+        except Exception:
+            try:
+                st.experimental_set_query_params()  # ältere Version
+            except Exception:
+                pass  # Sehr alte Version, ignorieren
+
         st.rerun()
     
     def show_user_info(self):
@@ -315,6 +358,10 @@ class AuthManager:
         user_perms = self.get_user_permissions(user['email'])
         
         with st.sidebar:
+            # Show TEST MODE indicator if active
+            if self.test_mode or user.get('test_mode', False):
+                st.success("🧪 TEST-MODUS")
+            
             st.markdown("### 👤 Benutzer")
             st.write(f"**{user['name']}**")
             st.write(f"*{user['email']}*")
@@ -327,8 +374,18 @@ class AuthManager:
             for project in user_perms['projects']:
                 st.write(f"📁 {project}")
             
-            if st.button("Abmelden", type="secondary"):
+            # Abmelden Button (funktioniert in allen Modi)
+            if st.button("🚪 Abmelden", type="secondary"):
                 self.logout()
+                
+            # Test-Mode specific options
+            if self.test_mode or user.get('test_mode', False):
+                st.markdown("---")
+                st.markdown("**🧪 Test-Optionen:**")
+                if st.button("🔄 Benutzer wechseln", type="secondary"):
+                    # Force user selection on next render and suppress auto-login
+                    st.session_state["force_test_user_selection"] = True
+                    self.logout()
 
 # Global auth manager instance
 auth_manager = AuthManager()
