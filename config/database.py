@@ -190,5 +190,46 @@ class DatabaseConfig:
         
         return self.execute_query(query, tuple(params))
 
+    @st.cache_data(ttl=3600)  # Cache für 1 Stunde
+    def get_project_bookings(_self, projects: list, hours_column: str = "FaktStd", activity: str = None) -> pd.DataFrame:
+        """
+        Lädt Buchungsdaten für Zeitreihen-Analysen.
+        
+        Args:
+            projects: Liste der Projekt-IDs
+            hours_column: Spalte für Stunden (Zeit oder FaktStd)
+            activity: Optional Activity-Filter
+            
+        Returns:
+            DataFrame mit [DatumBuchung, Stunden, Activity, Projekt]
+        """
+        if not PYODBC_AVAILABLE:
+            logging.warning("pyodbc not available - returning empty DataFrame")
+            return pd.DataFrame()
+        
+        if not projects:
+            return pd.DataFrame()
+        
+        placeholders = ','.join(['?' for _ in projects])
+        params = list(projects)
+        
+        query = f"""
+        SELECT 
+            [DatumBuchung],
+            [Projekt],
+            [Verwendung] as Activity,
+            CAST([{hours_column}] as FLOAT) as Stunden
+        FROM ZV
+        WHERE [Projekt] IN ({placeholders})
+        """
+        
+        if activity:
+            query += " AND [Verwendung] = ?"
+            params.append(activity)
+        
+        query += " ORDER BY [DatumBuchung] ASC"
+        
+        return _self.execute_query(query, tuple(params))
+
 # Global database instance
 db_config = DatabaseConfig()

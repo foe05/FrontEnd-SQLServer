@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Overview
-Streamlit-based SQL Server dashboard for time tracking analysis with Entra ID authentication and TEST mode support.
+Streamlit-based SQL Server dashboard for time tracking analysis with Entra ID authentication, TEST mode support, and sprint-based forecasting.
 
 ## Commands
 - **Test Mode**: `TEST_MODE=true streamlit run app.py` (Quick demo with dummy data)
@@ -21,6 +21,8 @@ Streamlit-based SQL Server dashboard for time tracking analysis with Entra ID au
 - **Cache**: Filesystem-based target hours storage
 - **Export**: Excel via openpyxl with formatting
 - **TEST Mode**: Mock database with JSON dummy data
+- **Forecasting**: Sprint-based (4 sprints, weighted) with 3 scenarios
+- **Visualization**: Plotly for interactive charts and burn-down analysis
 
 ## Code Style Guidelines
 - Use type hints for all function parameters and return values
@@ -41,3 +43,6 @@ Streamlit-based SQL Server dashboard for time tracking analysis with Entra ID au
 - Dashboard shows project summary (Soll vs. Ist) and detailed activity breakdown
 - Supports flexible hours source selection (Zeit vs. FaktStd columns)
 - All features work in TEST_MODE with dummy data for immediate testing
+- Forecast overrides stored in `cache/forecast_{project}_{activity}.json`
+- Sprint-based forecasting uses weighted 4-sprint analysis (40%, 30%, 20%, 10%)
+- Dummy data covers last 8 weeks (4 sprints) with realistic velocity variations

@@ -4,7 +4,8 @@ openpyxl==3.1.2
 python-dotenv==1.0.0
 requests==2.31.0
 numpy==1.26.2
-plotly==5.17.0
+scikit-learn>=1.3.0
+plotly>=5.18.0
 # msal is not needed for test mode
 # pyodbc is not needed for test mode
 # streamlit-authenticator is not needed for test mode
