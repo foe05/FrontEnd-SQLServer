@@ -20,8 +20,21 @@ st.set_page_config(
 from components.auth import auth_manager
 from components.filters import filter_manager
 from components.export import excel_exporter
+from components.burndown_chart import (
+    render_burndown_chart, 
+    render_weekly_trend, 
+    show_forecast_metrics, 
+    render_activity_comparison,
+    render_cumulative_comparison
+)
+from components.forecast_ui import (
+    render_forecast_scenarios, 
+    render_scenario_chart, 
+    render_sprint_velocity_chart
+)
 from utils.cache import cache_manager
 from utils.health import health_checker
+from utils.forecast_engine import ForecastEngine
 
 # Import database config based on environment
 TEST_MODE = os.getenv('TEST_MODE', 'false').lower() == 'true'
@@ -342,56 +355,199 @@ class TimeTrackingApp:
                     'search_term': search_term
                 })
                 
-                # Show project summary first
-                if not project_summary_df.empty:
-                    st.subheader("📊 Projekt-Zusammenfassung")
-                    st.markdown("Übersicht über Soll- vs. Ist-Stunden pro Projekt")
-                    
-                    # Configure project summary columns
-                    project_summary_config = {
-                        'Sollstunden Gesamt': st.column_config.NumberColumn(
-                            'Sollstunden Gesamt',
-                            help="Summe aller verkauften Stunden für dieses Projekt",
-                            format="%.1f STD"
-                        ),
-                        'Iststunden Gesamt': st.column_config.NumberColumn(
-                            'Iststunden Gesamt',
-                            help="Summe aller gebuchten Stunden für dieses Projekt",
-                            format="%.1f STD"
-                        ),
-                        'Erfüllungsstand (%)': st.column_config.NumberColumn(
-                            'Erfüllungsstand (%)',
-                            help="Gesamterfüllungsstand des Projekts",
-                            format="%.1f%%"
-                        ),
-                        'Status': st.column_config.TextColumn(
-                            'Status',
-                            help="🟢 ≤100% | 🟡 100-110% | 🔴 >110%"
-                        )
-                    }
-                    
-                    st.dataframe(
-                        project_summary_df,
-                        column_config=project_summary_config,
-                        use_container_width=True
-                    )
+                # Tab-Navigation
+                tab1, tab2, tab3 = st.tabs(["📊 Übersicht", "📈 Zeitreihen", "📥 Export"])
                 
-                st.markdown("---")  # Separator
-                
-                # Show main dashboard
-                final_dashboard = self.show_editable_dashboard(dashboard_df)
-                
-                # Export functionality
-                if auth_manager.has_permission(current_user['email'], 'export'):
-                    excel_exporter.show_export_options(
-                        final_dashboard,
-                        filtered_data,
-                        current_user,
-                        {
-                            'selected_projects': selected_projects,
-                            **date_filters
+                # Tab 1: Übersicht (bestehende Funktionalität)
+                with tab1:
+                    # Show project summary first
+                    if not project_summary_df.empty:
+                        st.subheader("📊 Projekt-Zusammenfassung")
+                        st.markdown("Übersicht über Soll- vs. Ist-Stunden pro Projekt")
+                        
+                        # Configure project summary columns
+                        project_summary_config = {
+                            'Sollstunden Gesamt': st.column_config.NumberColumn(
+                                'Sollstunden Gesamt',
+                                help="Summe aller verkauften Stunden für dieses Projekt",
+                                format="%.1f STD"
+                            ),
+                            'Iststunden Gesamt': st.column_config.NumberColumn(
+                                'Iststunden Gesamt',
+                                help="Summe aller gebuchten Stunden für dieses Projekt",
+                                format="%.1f STD"
+                            ),
+                            'Erfüllungsstand (%)': st.column_config.NumberColumn(
+                                'Erfüllungsstand (%)',
+                                help="Gesamterfüllungsstand des Projekts",
+                                format="%.1f%%"
+                            ),
+                            'Status': st.column_config.TextColumn(
+                                'Status',
+                                help="🟢 ≤100% | 🟡 100-110% | 🔴 >110%"
+                            )
                         }
+                        
+                        st.dataframe(
+                            project_summary_df,
+                            column_config=project_summary_config,
+                            use_container_width=True
+                        )
+                    
+                    st.markdown("---")  # Separator
+                    
+                    # Show main dashboard
+                    final_dashboard = self.show_editable_dashboard(dashboard_df)
+                
+                # Tab 2: Zeitreihen & Prognosen
+                with tab2:
+                    st.header("📈 Zeitreihen & Prognosen")
+                    
+                    # Level-Auswahl
+                    analysis_level = st.radio(
+                        "Analyse-Ebene:", 
+                        ["Projekt-Übersicht", "Nach Activity"], 
+                        horizontal=True
                     )
+                    
+                    if analysis_level == "Projekt-Übersicht":
+                        # Für jedes Projekt: Forecast-Szenarien + Sprint-Analyse
+                        for projekt in selected_projects:
+                            st.markdown(f"### 📂 Projekt: {projekt}")
+                            
+                            try:
+                                # Daten laden
+                                project_bookings = db_config.get_project_bookings([projekt], hours_column)
+                                
+                                if project_bookings.empty:
+                                    st.info(f"Keine Buchungsdaten für Projekt '{projekt}' verfügbar")
+                                    continue
+                                
+                                # Target Hours berechnen
+                                all_targets = self.load_target_hours()
+                                project_targets = all_targets.get(projekt, {})
+                                total_target = sum(project_targets.values()) if project_targets else 0
+                                
+                                # NEU: Forecast-Szenarien (ersetzt alten Burndown)
+                                active_hours = render_forecast_scenarios(
+                                    project_id=projekt,
+                                    bookings_df=project_bookings,
+                                    target_hours=total_target,
+                                    user_email=current_user.get('email', 'unknown'),
+                                    activity=None
+                                )
+                                
+                                st.divider()
+                                
+                                # NEU: Szenario-Chart (mit aktivem Wert aus UI)
+                                key_suffix = f"{projekt}"
+                                use_manual = st.session_state.get(f"mf_use_{key_suffix}", False)
+                                
+                                render_scenario_chart(
+                                    project_id=projekt,
+                                    bookings_df=project_bookings,
+                                    target_hours=total_target,
+                                    activity=None,
+                                    manual_hours_per_sprint=active_hours,
+                                    use_manual=use_manual
+                                )
+                                
+                                # NEU: Sprint-Velocity Chart (optional)
+                                with st.expander("📊 Sprint-Velocity Analyse"):
+                                    engine = ForecastEngine(project_bookings, total_target)
+                                    if len(engine.sprint_data) > 0:
+                                        render_sprint_velocity_chart(engine.sprint_data)
+                                    else:
+                                        st.info("Keine Sprint-Daten verfügbar (benötigt Buchungen der letzten 8 Wochen)")
+                                
+                                # Bestehender Wochentrend (optional in Expander)
+                                with st.expander("📊 Wochentrend anzeigen"):
+                                    render_weekly_trend(project_bookings, projekt)
+                                
+                                st.markdown("---")
+                                
+                            except Exception as e:
+                                st.error(f"Fehler beim Laden der Zeitreihen für Projekt '{projekt}': {str(e)}")
+                    
+                    else:  # Nach Activity
+                        # Activity-Level Charts für jedes Projekt
+                        for projekt in selected_projects:
+                            st.markdown(f"### 📂 Projekt: {projekt}")
+                            
+                            try:
+                                # Daten laden
+                                project_bookings = db_config.get_project_bookings([projekt], hours_column)
+                                
+                                if project_bookings.empty:
+                                    st.info(f"Keine Buchungsdaten für Projekt '{projekt}' verfügbar")
+                                    continue
+                                
+                                # Target Hours pro Activity
+                                all_targets = self.load_target_hours()
+                                project_targets = all_targets.get(projekt, {})
+                                
+                                # Activity-spezifische Forecast-Szenarien
+                                if 'Activity' in project_bookings.columns:
+                                    for activity in project_bookings['Activity'].unique():
+                                        st.markdown(f"#### 📋 Activity: {activity}")
+                                        
+                                        activity_bookings = project_bookings[project_bookings['Activity'] == activity]
+                                        activity_target = project_targets.get(activity, 0.0)
+                                        
+                                        # Forecast-Szenarien für diese Activity
+                                        activity_active_hours = render_forecast_scenarios(
+                                            project_id=projekt,
+                                            bookings_df=activity_bookings,
+                                            target_hours=activity_target,
+                                            user_email=current_user.get('email', 'unknown'),
+                                            activity=activity
+                                        )
+                                        
+                                        # Szenario-Chart (mit aktivem Wert aus UI)
+                                        with st.expander("📊 Szenario-Visualisierung"):
+                                            key_suffix_act = f"{projekt}_{activity}"
+                                            use_manual_act = st.session_state.get(f"mf_use_{key_suffix_act}", False)
+                                            
+                                            render_scenario_chart(
+                                                project_id=projekt,
+                                                bookings_df=activity_bookings,
+                                                target_hours=activity_target,
+                                                activity=activity,
+                                                manual_hours_per_sprint=activity_active_hours,
+                                                use_manual=use_manual_act
+                                            )
+                                        
+                                        st.markdown("---")
+                                    
+                                    # Bestehende Activity Comparison als Übersicht
+                                    with st.expander("📊 Activity-Vergleich anzeigen"):
+                                        render_activity_comparison(project_bookings, projekt)
+                                        render_cumulative_comparison(project_bookings, project_targets)
+                                else:
+                                    st.warning("Activity-Spalte nicht verfügbar")
+                                
+                                st.markdown("---")
+                                
+                            except Exception as e:
+                                st.error(f"Fehler beim Laden der Activity-Charts für Projekt '{projekt}': {str(e)}")
+                
+                # Tab 3: Export
+                with tab3:
+                    st.header("📥 Export")
+                    
+                    # Export functionality
+                    if auth_manager.has_permission(current_user['email'], 'export'):
+                        excel_exporter.show_export_options(
+                            dashboard_df,
+                            filtered_data,
+                            current_user,
+                            {
+                                'selected_projects': selected_projects,
+                                **date_filters
+                            }
+                        )
+                    else:
+                        st.warning("Sie haben keine Berechtigung zum Export von Daten")
                 
                 # Show health check if requested
                 if st.session_state.get('show_health', False):

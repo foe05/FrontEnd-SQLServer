@@ -4,6 +4,7 @@ Ein Streamlit-basiertes Dashboard für die Analyse von SQL Server Zeiterfassungs
 
 ## 🚀 Features
 
+### **Basis-Funktionalität:**
 - **🧪 TEST-MODUS**: Sofortiger Start mit Dummy-Daten, keine Setup-Zeit
 - **Benutzerauthentifizierung**: Microsoft Entra ID mit lokaler Entwicklungs-Fallback
 - **📊 Projekt-Zusammenfassung**: Soll vs. Ist-Stunden Übersicht pro Projekt
@@ -15,6 +16,17 @@ Ein Streamlit-basiertes Dashboard für die Analyse von SQL Server Zeiterfassungs
 - **Excel Export**: Formatierte Datenexporte für Zusammenfassung und Details
 - **Docker Support**: Multi-Stage Container (Einfach/Test/Production)
 - **Health Monitoring**: System-Health-Check Dashboard
+
+### **Zeitreihen & Prognosen (NEU):**
+- **📈 Sprint-basierte Forecasts**: Gewichtete 4-Sprint-Analyse (letzte 8 Wochen)
+- **🔮 Prognose-Szenarien**: 3 Budget-Ende-Szenarien (Optimistisch/Realistisch/Pessimistisch)
+- **📊 Burn-down Charts**: Interaktive Plotly-Visualisierungen mit Szenario-Linien
+- **⚡ Velocity-Trend-Analyse**: Erkennt steigende/fallende Team-Produktivität
+- **📝 Manuelle Prognosen**: Override-Funktion mit Begründung und Persistierung
+- **📅 Budget-Ende-Prognose**: Automatische Berechnung basierend auf Sprint-Velocity
+- **📈 Wochentrend-Charts**: Aggregierte Stunden-Visualisierung
+- **🎯 Activity-Level Forecasts**: Prognosen für einzelne Tätigkeiten
+- **🔄 Live-Updates**: Prognosen aktualisieren sofort bei Wert-Änderungen
 
 ## 📊 Dashboard Ansicht
 
@@ -174,11 +186,21 @@ Erwartet SQL Server Tabelle `ZV` mit folgenden Spalten:
 
 ### Dashboard Navigation
 
+**Tab "📊 Übersicht":**
 1. **Projekt-Zusammenfassung**: Übersicht Soll vs. Ist pro Projekt
-2. **Projektauswahl**: Multiselect mit verfügbaren Projekten  
+2. **Tätigkeits-Tabelle**: Editierbare Sollstunden mit Prozent-Anteilen
 3. **Filter**: Jahr/Monat/Quartal, Textsuche, Stunden-Quelle auswählen
-4. **Tätigkeits-Tabelle**: Editierbare Sollstunden mit Prozent-Anteilen
-5. **Export**: Excel-Download für Zusammenfassung und Details
+
+**Tab "📈 Zeitreihen" (NEU):**
+1. **Prognose-Szenarien**: 3 Budget-Ende-Szenarien mit Konfidenz-Levels
+2. **Burn-down Charts**: Interaktive Visualisierung mit Szenario-Linien
+3. **Sprint-Velocity**: Gewichtete 4-Sprint-Analyse
+4. **Manuelle Prognosen**: Override-Funktion für eigene Einschätzungen
+5. **Wochentrends**: Aggregierte Stunden pro Kalenderwoche
+6. **Velocity-Trends**: Automatische Erkennung steigender/fallender Produktivität
+
+**Tab "📥 Export":**
+1. **Excel-Export**: Formatierte Downloads für Zusammenfassung und Details
 
 ### Key Features nutzen
 
@@ -186,7 +208,10 @@ Erwartet SQL Server Tabelle `ZV` mit folgenden Spalten:
 - **Stunden-Quelle wechseln**: Sidebar → "Zeit" oder "FaktStd" wählen
 - **Prozent-Anteile**: Automatische Berechnung des Projekt-Anteils
 - **Status-Ampeln**: 🟢 ≤100% | 🟡 100-110% | 🔴 >110%
-- **Live-Update**: Änderungen aktualisieren sofort alle Berechnungen
+- **Budget-Prognosen**: 3 Szenarien mit Sprint-Velocity (optimistisch/realistisch/pessimistisch)
+- **Manuelle Override**: Eigene Prognose-Werte mit Begründung speichern
+- **Live-Update**: Änderungen aktualisieren sofort alle Berechnungen und Charts
+- **Velocity-Analyse**: Sprint-Details und Trend-Warnungen
 
 ## 🔍 Health Check
 

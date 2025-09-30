@@ -259,5 +259,90 @@ class TestDatabaseConfig:
             'dummy_data_loaded': self.dummy_data_loaded
         }
 
+    def get_project_bookings(self, projects: list, hours_column: str = "FaktStd", activity: str = None) -> pd.DataFrame:
+        """
+        Lädt Buchungsdaten für Zeitreihen-Analysen (TEST MODE).
+        
+        Args:
+            projects: Liste der Projekt-IDs
+            hours_column: Spalte für Stunden (Zeit oder FaktStd)
+            activity: Optional Activity-Filter
+            
+        Returns:
+            DataFrame mit [DatumBuchung, Stunden, Activity, Projekt]
+        """
+        if self.time_entries_df.empty:
+            # Generate timeseries if not available
+            return self.generate_timeseries_dummy_data(projects, hours_column, activity)
+        
+        # Filter by projects
+        df = self.time_entries_df[self.time_entries_df['Projekt'].isin(projects)].copy()
+        
+        # Filter by activity if specified
+        if activity:
+            df = df[df['Verwendung'] == activity]
+        
+        # Select and rename columns
+        result_df = df[['Datum', 'Projekt', 'Verwendung', hours_column]].copy()
+        result_df.columns = ['DatumBuchung', 'Projekt', 'Activity', 'Stunden']
+        result_df['DatumBuchung'] = pd.to_datetime(result_df['DatumBuchung'])
+        
+        return result_df.sort_values('DatumBuchung')
+    
+    def generate_timeseries_dummy_data(self, projects: list, hours_column: str = "FaktStd", activity: str = None) -> pd.DataFrame:
+        """Generate realistic sprint-based timeseries dummy data for charts"""
+        import numpy as np
+        
+        # Generiere Daten für letzte 8 Wochen (4 Sprints) bis heute
+        end_date = datetime.now()
+        start_date = end_date - timedelta(weeks=8)
+        
+        data = []
+        
+        for project in projects:
+            activities = ['Analyse & Konzeption', 'Implementierung', 'Testing & QA', 'Deployment']
+            
+            for act in activities:
+                if activity and act != activity:
+                    continue
+                
+                # 4 Sprints à 2 Wochen mit realistischer Velocity-Variation
+                for sprint in range(4):
+                    sprint_start = start_date + timedelta(weeks=sprint * 2)
+                    
+                    # Sprint-Velocity variiert (realistisch)
+                    # Basis: 80h pro Sprint mit Variation
+                    base_velocity = 80
+                    sprint_velocity = base_velocity + np.random.uniform(-15, 20)
+                    
+                    # Verteilung über Arbeitstage (Mo-Fr)
+                    work_days = []
+                    for day_offset in range(14):
+                        day = sprint_start + timedelta(days=day_offset)
+                        if day.weekday() < 5 and day <= end_date:  # Nur bis heute
+                            work_days.append(day)
+                    
+                    if not work_days:
+                        continue
+                    
+                    # Verteile Sprint-Velocity auf Arbeitstage
+                    for day in work_days:
+                        # Realistische Schwankung pro Tag (60-140% vom Durchschnitt)
+                        avg_per_day = sprint_velocity / len(work_days)
+                        daily_hours = avg_per_day * np.random.uniform(0.6, 1.4)
+                        
+                        # Begrenzen auf 0-10h pro Tag
+                        daily_hours = max(0, min(10, daily_hours))
+                        
+                        data.append({
+                            'DatumBuchung': day,
+                            'Projekt': project,
+                            'Activity': act,
+                            'Stunden': round(daily_hours, 1)
+                        })
+        
+        df = pd.DataFrame(data)
+        return df.sort_values('DatumBuchung') if not df.empty else df
+
 # Global test database instance
 test_db_config = TestDatabaseConfig()
