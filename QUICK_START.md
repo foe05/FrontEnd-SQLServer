@@ -39,10 +39,10 @@ docker run -p 8501:8501 -e TEST_MODE=true test-dashboard
 - ✅ **Alle Filter** - Jahr, Monat, Projekte, Suche
 
 ### 📊 Test-Daten:
-- **Projekte**: P24SAN06, P24XYZ01, P24ABC02
+- **Projekte**: P24ABC01, P24XYZ01, P24DEF02
 - **Tätigkeiten**: Analyse, Design, Implementierung, Testing, Deployment
 - **Zeitraum**: Januar-Februar 2024
-- **Benutzer**: test@intend.com, demo@intend.com, viewer@intend.com
+- **Benutzer**: test@company.com, demo@company.com, viewer@company.com
 
 ---
 

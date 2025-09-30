@@ -62,8 +62,8 @@ class AuthManager:
             if self.test_mode:
                 return {
                     "users": {
-                        "test@intend.com": {
-                            "projects": ["P24SAN06", "P24XYZ01", "P24ABC02"],
+                        "test@company.com": {
+                            "projects": ["P24ABC01", "P24XYZ01", "P24DEF02"],
                             "permissions": ["read", "export", "edit_targets", "admin"]
                         }
                     },
@@ -201,7 +201,7 @@ class AuthManager:
         st.info("Für lokale Entwicklung ohne Entra ID")
         
         with st.form("local_login"):
-            email = st.text_input("E-Mail-Adresse", value="admin@intend.com")
+            email = st.text_input("E-Mail-Adresse", value="admin@company.com")
             name = st.text_input("Name", value="Test User")
             submit = st.form_submit_button("Anmelden", type="primary")
             
@@ -240,7 +240,7 @@ class AuthManager:
         available_users = list(self.users_config.get("users", {}).keys())
         
         if not available_users:
-            available_users = ["test@intend.com"]
+            available_users = ["test@company.com"]
         
         # Auto-select first user or allow selection
         col1, col2 = st.columns([3, 1])

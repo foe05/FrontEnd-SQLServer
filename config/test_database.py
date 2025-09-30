@@ -75,7 +75,7 @@ class TestDatabaseConfig:
     
     def generate_minimal_dummy_data(self):
         """Generate minimal dummy data if generator fails"""
-        projects = ["P24SAN06", "P24XYZ01", "P24ABC02"]
+        projects = ["P24ABC01", "P24XYZ01", "P24DEF02"]
         activities = ["Analyse & Konzeption", "Implementierung", "Testing & QA", "Deployment"]
         
         # Create minimal time entries
