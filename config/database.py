@@ -7,14 +7,26 @@ import streamlit as st
 from dotenv import load_dotenv
 from typing import Optional, Dict, Any
 import logging
+import warnings
 
-# Import pyodbc only if not in test mode
+# Import database drivers
 try:
     import pyodbc
     PYODBC_AVAILABLE = True
 except ImportError:
     PYODBC_AVAILABLE = False
     logging.warning("pyodbc not available - using fallback mode")
+
+try:
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.engine import URL
+    SQLALCHEMY_AVAILABLE = True
+except ImportError:
+    SQLALCHEMY_AVAILABLE = False
+    logging.warning("sqlalchemy not available - using pyodbc fallback")
+
+# Suppress pandas SQLAlchemy warning when using pyodbc
+warnings.filterwarnings('ignore', message='pandas only supports SQLAlchemy')
 
 # Load environment variables
 load_dotenv()
@@ -29,9 +41,10 @@ class DatabaseConfig:
         self.password = os.getenv('SQL_SERVER_PASSWORD', '')
         self.driver = '{ODBC Driver 17 for SQL Server}'
         self.connection_string = self._build_connection_string()
+        self.engine = self._create_engine() if SQLALCHEMY_AVAILABLE else None
         
     def _build_connection_string(self) -> str:
-        """Build SQL Server connection string"""
+        """Build SQL Server connection string (for pyodbc)"""
         if self.username and self.password:
             return (f"DRIVER={self.driver};"
                    f"SERVER={self.server};"
@@ -46,6 +59,41 @@ class DatabaseConfig:
                    f"DATABASE={self.database};"
                    f"Trusted_Connection=yes;"
                    f"TrustServerCertificate=yes;")
+    
+    def _create_engine(self):
+        """Create SQLAlchemy engine for pandas compatibility"""
+        if not SQLALCHEMY_AVAILABLE:
+            return None
+        
+        try:
+            if self.username and self.password:
+                connection_url = URL.create(
+                    "mssql+pyodbc",
+                    username=self.username,
+                    password=self.password,
+                    host=self.server,
+                    database=self.database,
+                    query={
+                        "driver": "ODBC Driver 17 for SQL Server",
+                        "TrustServerCertificate": "yes"
+                    }
+                )
+            else:
+                connection_url = URL.create(
+                    "mssql+pyodbc",
+                    host=self.server,
+                    database=self.database,
+                    query={
+                        "driver": "ODBC Driver 17 for SQL Server",
+                        "Trusted_Connection": "yes",
+                        "TrustServerCertificate": "yes"
+                    }
+                )
+            
+            return create_engine(connection_url, pool_pre_ping=True)
+        except Exception as e:
+            logging.error(f"Failed to create SQLAlchemy engine: {e}")
+            return None
     
     def test_connection(self) -> bool:
         """Test database connection"""
@@ -69,17 +117,30 @@ class DatabaseConfig:
             logging.warning("pyodbc not available - returning empty DataFrame")
             st.warning("Database connection not available - using test mode")
             return pd.DataFrame()
-            
-        try:
-            with pyodbc.connect(_self.connection_string) as conn:
+        
+        # Use SQLAlchemy engine if available (recommended by pandas)
+        if _self.engine is not None:
+            try:
                 if params:
-                    return pd.read_sql(query, conn, params=params)
+                    return pd.read_sql(text(query), _self.engine, params=params)
                 else:
-                    return pd.read_sql(query, conn)
-        except Exception as e:
-            logging.error(f"Query execution failed: {e}")
-            st.error(f"Database query failed: {str(e)}")
-            return pd.DataFrame()
+                    return pd.read_sql(text(query), _self.engine)
+            except Exception as e:
+                logging.error(f"Query execution failed with SQLAlchemy: {e}")
+                st.error(f"Database query failed: {str(e)}")
+                return pd.DataFrame()
+        else:
+            # Fallback to pyodbc connection
+            try:
+                with pyodbc.connect(_self.connection_string) as conn:
+                    if params:
+                        return pd.read_sql(query, conn, params=params)
+                    else:
+                        return pd.read_sql(query, conn)
+            except Exception as e:
+                logging.error(f"Query execution failed: {e}")
+                st.error(f"Database query failed: {str(e)}")
+                return pd.DataFrame()
     
     def get_projects(self, user_projects: list) -> pd.DataFrame:
         """Get available projects for user"""
