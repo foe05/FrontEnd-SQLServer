@@ -151,7 +151,7 @@ class DatabaseConfig:
         query = f"""
         SELECT DISTINCT [Projekt], [ProjektNr], [Kundenname]
         FROM ZV 
-        WHERE [Projekt] IN ({placeholders})
+        WHERE [ProjektNr] IN ({placeholders})
         ORDER BY [Projekt]
         """
         return self.execute_query(query, tuple(user_projects))
@@ -164,9 +164,9 @@ class DatabaseConfig:
         where_conditions = []
         params = []
         
-        # Project filter
+        # Project filter (using ProjektNr)
         placeholders = ','.join(['?' for _ in projects])
-        where_conditions.append(f"[Projekt] IN ({placeholders})")
+        where_conditions.append(f"[ProjektNr] IN ({placeholders})")
         params.extend(projects)
         
         # Additional filters
@@ -217,9 +217,9 @@ class DatabaseConfig:
         where_conditions = []
         params = []
         
-        # Project filter
+        # Project filter (using ProjektNr)
         placeholders = ','.join(['?' for _ in projects])
-        where_conditions.append(f"[Projekt] IN ({placeholders})")
+        where_conditions.append(f"[ProjektNr] IN ({placeholders})")
         params.extend(projects)
         
         # Additional filters
@@ -257,7 +257,7 @@ class DatabaseConfig:
         Lädt Buchungsdaten für Zeitreihen-Analysen.
         
         Args:
-            projects: Liste der Projekt-IDs
+            projects: Liste der Projekt-IDs (ProjektNr wie P24SAN04)
             hours_column: Spalte für Stunden (Zeit oder FaktStd)
             activity: Optional Activity-Filter
             
@@ -281,7 +281,7 @@ class DatabaseConfig:
             [Verwendung] as Activity,
             CAST([{hours_column}] as FLOAT) as Stunden
         FROM ZV
-        WHERE [Projekt] IN ({placeholders})
+        WHERE [ProjektNr] IN ({placeholders})
         """
         
         if activity:
@@ -312,7 +312,7 @@ class DatabaseConfig:
         query = """
         SELECT COUNT(*) as count
         FROM ZV
-        WHERE [Projekt] = ?
+        WHERE [ProjektNr] = ?
         """
         
         try:
