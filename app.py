@@ -20,6 +20,7 @@ st.set_page_config(
 from components.auth import auth_manager
 from components.filters import filter_manager
 from components.export import excel_exporter
+from components.admin_user_manager import admin_user_manager
 from components.burndown_chart import (
     render_burndown_chart, 
     render_weekly_trend, 
@@ -355,8 +356,12 @@ class TimeTrackingApp:
                     'search_term': search_term
                 })
                 
-                # Tab-Navigation
-                tab1, tab2, tab3 = st.tabs(["📊 Übersicht", "📈 Zeitreihen", "📥 Export"])
+                # Tab-Navigation (conditional for admin)
+                if auth_manager.has_permission(current_user['email'], 'admin'):
+                    tab1, tab2, tab3, tab4 = st.tabs(["📊 Übersicht", "📈 Zeitreihen", "📥 Export", "⚙️ Administration"])
+                else:
+                    tab1, tab2, tab3 = st.tabs(["📊 Übersicht", "📈 Zeitreihen", "📥 Export"])
+                    tab4 = None
                 
                 # Tab 1: Übersicht (bestehende Funktionalität)
                 with tab1:
@@ -548,6 +553,11 @@ class TimeTrackingApp:
                         )
                     else:
                         st.warning("Sie haben keine Berechtigung zum Export von Daten")
+                
+                # Tab 4: Administration (nur für Admins)
+                if tab4 is not None:
+                    with tab4:
+                        admin_user_manager.show_user_management()
                 
                 # Show health check if requested
                 if st.session_state.get('show_health', False):
