@@ -29,11 +29,11 @@ services:
       # Mount configuration files
       - ./config/users.json:/app/config/users.json:ro
       
-      # Mount cache directory for persistent target hours
-      - ./cache:/app/cache
+      # Mount cache directory for persistent target hours (use named volume for permissions)
+      - cache-data:/app/cache
       
-      # Mount logs directory
-      - ./logs:/app/logs
+      # Mount logs directory (use named volume for permissions)
+      - logs-data:/app/logs
     
     networks:
       - dashboard-network
