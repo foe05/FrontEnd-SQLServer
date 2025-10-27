@@ -1,16 +1,8 @@
 {
   "users": {
-    "admin@company.com": {
-      "projects": ["P24ABC01", "P24XYZ01", "P24DEF02"],
+    "johannesb@intern.intend.de": {
+      "projects": ["P24SAN04", "P24SAN06", "P24SAN14", "P24SAN15", "P24SAN16", "P24FBW04", "P24FBW06", "P24FBW07", "P24FBW09", "P24FBW10"],
       "permissions": ["read", "export", "edit_targets", "admin"]
-    },
-    "user@company.com": {
-      "projects": ["P24ABC01", "P24XYZ01"],
-      "permissions": ["read", "export", "edit_targets"]
-    },
-    "viewer@company.com": {
-      "projects": ["P24ABC01"],
-      "permissions": ["read", "export"]
     }
   },
   "default_permissions": ["read"]
