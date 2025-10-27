@@ -121,10 +121,13 @@ class DatabaseConfig:
         # Use SQLAlchemy engine if available (recommended by pandas)
         if _self.engine is not None:
             try:
-                if params:
-                    return pd.read_sql(text(query), _self.engine, params=params)
-                else:
-                    return pd.read_sql(text(query), _self.engine)
+                # SQLAlchemy requires named parameters with text(), but pandas.read_sql
+                # with positional params works differently - use connection directly
+                with _self.engine.connect() as conn:
+                    if params:
+                        return pd.read_sql(query, conn, params=params)
+                    else:
+                        return pd.read_sql(query, conn)
             except Exception as e:
                 logging.error(f"Query execution failed with SQLAlchemy: {e}")
                 st.error(f"Database query failed: {str(e)}")
