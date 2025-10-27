@@ -231,5 +231,38 @@ class DatabaseConfig:
         
         return _self.execute_query(query, tuple(params))
 
+    def validate_project_exists(self, project_id: str) -> bool:
+        """
+        Validiert ob ein Projektkürzel in der ZV-Tabelle existiert.
+        
+        Args:
+            project_id: Projektkürzel (z.B. 'P24SAN04')
+            
+        Returns:
+            True wenn Projekt existiert, False sonst
+        """
+        if not PYODBC_AVAILABLE:
+            logging.warning("pyodbc not available - skipping validation")
+            return True
+        
+        if not project_id or not project_id.strip():
+            return False
+        
+        query = """
+        SELECT COUNT(*) as count
+        FROM ZV
+        WHERE [Projekt] = ?
+        """
+        
+        try:
+            with pyodbc.connect(self.connection_string, timeout=5) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, (project_id.strip(),))
+                result = cursor.fetchone()
+                return result[0] > 0 if result else False
+        except Exception as e:
+            logging.error(f"Project validation failed for '{project_id}': {e}")
+            return False
+
 # Global database instance
 db_config = DatabaseConfig()

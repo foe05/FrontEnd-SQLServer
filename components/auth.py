@@ -169,10 +169,14 @@ class AuthManager:
         if self.test_mode:
             return self.test_mode_login()
         
-        # Handle authentication code from URL
-        query_params = st.query_params
+        # Handle authentication code from URL (compatibility with Streamlit 1.29+)
+        try:
+            query_params = st.query_params
+        except AttributeError:
+            query_params = st.experimental_get_query_params()
+        
         if 'code' in query_params:
-            auth_code = query_params['code']
+            auth_code = query_params['code'] if isinstance(query_params['code'], str) else query_params['code'][0]
             user = self.authenticate_with_code(auth_code)
             if user:
                 st.session_state.user = user
@@ -182,7 +186,7 @@ class AuthManager:
                         del st.query_params['code']
                     if 'state' in st.query_params:
                         del st.query_params['state']
-                except Exception:
+                except (AttributeError, Exception):
                     # Fallback für ältere Streamlit-Versionen
                     st.experimental_set_query_params()
                 st.rerun()
