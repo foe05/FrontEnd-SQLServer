@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import re
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 import hashlib
@@ -20,6 +21,30 @@ class CacheManager:
         """Ensure cache directory exists"""
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
+    
+    def sanitize_filename(self, text: str) -> str:
+        """
+        Sanitize text for use in filenames by replacing invalid characters.
+        
+        Args:
+            text: Text to sanitize
+            
+        Returns:
+            Sanitized text safe for filenames
+        """
+        # Replace filesystem-problematic characters with underscores
+        # Handles: / \ : * ? " < > |
+        invalid_chars = r'[/\\:*?"<>|]'
+        sanitized = re.sub(invalid_chars, '_', text)
+        
+        # Remove any leading/trailing dots or spaces
+        sanitized = sanitized.strip('. ')
+        
+        # Limit length to avoid filesystem issues (max 200 chars)
+        if len(sanitized) > 200:
+            sanitized = sanitized[:200]
+        
+        return sanitized
     
     def get_cache_key(self, prefix: str, **params) -> str:
         """Generate cache key from parameters"""
@@ -42,8 +67,10 @@ class CacheManager:
     @st.cache_data(ttl=1800)  # Cache for 30 minutes
     def cache_target_hours(_self, project: str, activity: str) -> Optional[float]:
         """Cache target hours for specific activity"""
-        cache_key = f"targets_{project}_{activity}"
-        cache_file = os.path.join(self.cache_dir, f"{cache_key}.json")
+        safe_project = _self.sanitize_filename(project)
+        safe_activity = _self.sanitize_filename(activity)
+        cache_key = f"targets_{safe_project}_{safe_activity}"
+        cache_file = os.path.join(_self.cache_dir, f"{cache_key}.json")
         
         if os.path.exists(cache_file):
             try:
@@ -60,7 +87,9 @@ class CacheManager:
     
     def save_target_hours(self, project: str, activity: str, target_hours: float):
         """Save target hours to cache/filesystem"""
-        cache_key = f"targets_{project}_{activity}"
+        safe_project = self.sanitize_filename(project)
+        safe_activity = self.sanitize_filename(activity)
+        cache_key = f"targets_{safe_project}_{safe_activity}"
         cache_file = os.path.join(self.cache_dir, f"{cache_key}.json")
         
         data = {
