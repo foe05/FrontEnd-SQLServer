@@ -232,13 +232,13 @@ class TimeTrackingApp:
             edited_data = st.data_editor(
                 edited_df,
                 column_config=column_config,
-                use_container_width=True,
+                width='stretch',
                 disabled=['Projekt', 'Tätigkeit/Activity', 'Anteil am Projekt (%)', 'Erfüllungsstand (%)', 'Status', 'Iststunden', 'Kunde']
             )
         except Exception as e:
             # Fallback for older Streamlit versions
             st.warning("Verwende vereinfachte Tabellen-Ansicht (ältere Streamlit Version)")
-            st.dataframe(edited_df, use_container_width=True)
+            st.dataframe(edited_df, width='stretch')
             edited_data = edited_df  # No editing in fallback mode
         
         # Process any changes in target hours
@@ -396,7 +396,7 @@ class TimeTrackingApp:
                         st.dataframe(
                             project_summary_df,
                             column_config=project_summary_config,
-                            use_container_width=True
+                            width='stretch'
                         )
                     
                     st.markdown("---")  # Separator

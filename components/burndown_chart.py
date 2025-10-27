@@ -244,7 +244,7 @@ def render_burndown_chart(
     )
     
     # Render in Streamlit
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     
     # Metriken unterhalb des Charts
     col1, col2, col3, col4 = st.columns(4)
@@ -327,7 +327,7 @@ def render_weekly_trend(bookings_df: pd.DataFrame, project_id: str) -> None:
         height=400
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     
     # Metriken
     col1, col2, col3 = st.columns(3)
@@ -391,7 +391,7 @@ def render_activity_comparison(bookings_df: pd.DataFrame, project_id: str) -> No
         height=500
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 def render_cumulative_comparison(bookings_df: pd.DataFrame, target_hours_by_activity: Dict[str, float]) -> None:
     """
@@ -449,7 +449,7 @@ def render_cumulative_comparison(bookings_df: pd.DataFrame, target_hours_by_acti
         height=500
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 def show_forecast_metrics(bookings_df: pd.DataFrame, target_hours: float) -> None:
     """

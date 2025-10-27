@@ -100,7 +100,7 @@ def render_forecast_scenarios(
         with save_col:
             st.write("")  # Spacing
             st.write("")  # Spacing
-            if st.button("💾 Speichern", use_container_width=True, key=f"save_btn_{key_suffix}"):
+            if st.button("💾 Speichern", width='stretch', key=f"save_btn_{key_suffix}"):
                 save_forecast_overrides(
                     project_id, 
                     st.session_state[k_hours], 
@@ -208,7 +208,7 @@ def render_forecast_scenarios(
             
             display_df = sprint_display[['sprint_label', 'hours_formatted', 'sprint_start', 'sprint_end', 'weight_pct']]
             display_df.columns = ['Sprint', 'Stunden', 'Start', 'Ende', 'Gewicht']
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, width='stretch', hide_index=True)
         else:
             st.info("Noch keine Sprint-Daten verfügbar (benötigt Buchungen der letzten 8 Wochen)")
     
@@ -353,7 +353,7 @@ def render_scenario_chart(
         height=500
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 def render_sprint_velocity_chart(sprint_data: pd.DataFrame) -> None:
@@ -410,4 +410,4 @@ def render_sprint_velocity_chart(sprint_data: pd.DataFrame) -> None:
         height=350
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
