@@ -168,85 +168,122 @@ class TimeTrackingApp:
         if dashboard_df.empty:
             st.warning("Keine Daten verfügbar für die ausgewählten Filter")
             return dashboard_df
-        
+
         st.subheader("📊 Projekt Dashboard")
-        
+
         # Display metrics summary
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             total_projects = dashboard_df['Projekt'].nunique()
             st.metric("Projekte", total_projects)
-        
+
         with col2:
             total_activities = len(dashboard_df)
             st.metric("Tätigkeiten", total_activities)
-        
+
         with col3:
             total_actual = dashboard_df['Iststunden'].sum()
             st.metric("Iststunden Gesamt", f"{total_actual:.1f}")
-        
+
         with col4:
             overbooked = len(dashboard_df[dashboard_df['Status'] == '🔴 Überbucht'])
             st.metric("Überbuchte Tätigkeiten", overbooked)
-        
-        # Show table with editing capabilities
+
+        # Show projects in separate expanders
         st.markdown("### Detailansicht")
-        
-        # Create a copy for editing
-        edited_df = dashboard_df.copy()
-        
-        # Configure column display
-        column_config = {
-            'Sollstunden': st.column_config.NumberColumn(
-                'Sollstunden (verkauft)',
-                help="Klicken Sie zum Bearbeiten der Sollstunden",
-                min_value=0,
-                max_value=1000,
-                step=0.5,
-                format="%.1f STD"
-            ),
-            'Anteil am Projekt (%)': st.column_config.NumberColumn(
-                'Anteil am Projekt (%)',
-                help="Prozentsatz dieser Tätigkeit am Gesamtprojekt",
-                format="%.1f%%"
-            ),
-            'Erfüllungsstand (%)': st.column_config.NumberColumn(
-                'Erfüllungsstand (%)',
-                help="Automatisch berechnet: Ist/Soll * 100",
-                format="%.1f%%"
-            ),
-            'Iststunden': st.column_config.NumberColumn(
-                'Iststunden',
-                help="Aus Zeiterfassung aggregiert",
-                format="%.1f STD"
-            ),
-            'Status': st.column_config.TextColumn(
-                'Status',
-                help="🟢 ≤100% | 🟡 100-110% | 🔴 >110%"
-            )
-        }
-        
-        # Show editable dataframe (with fallback for older Streamlit versions)
-        try:
-            edited_data = st.data_editor(
-                edited_df,
-                column_config=column_config,
-                width='stretch',
-                disabled=['Projekt', 'Tätigkeit/Activity', 'Anteil am Projekt (%)', 'Erfüllungsstand (%)', 'Status', 'Iststunden', 'Kunde']
-            )
-        except Exception as e:
-            # Fallback for older Streamlit versions
-            st.warning("Verwende vereinfachte Tabellen-Ansicht (ältere Streamlit Version)")
-            st.dataframe(edited_df, width='stretch')
-            edited_data = edited_df  # No editing in fallback mode
-        
-        # Process any changes in target hours
-        if not edited_data.equals(edited_df):
-            self.process_target_hour_changes(edited_df, edited_data)
-            st.rerun()
-        
-        return edited_data
+
+        # Track all edited data across projects
+        all_edited_data = []
+
+        # Group by project
+        for projekt in dashboard_df['Projekt'].unique():
+            project_df = dashboard_df[dashboard_df['Projekt'] == projekt].copy()
+
+            # Calculate project summary metrics
+            project_total_target = project_df['Sollstunden'].sum()
+            project_total_actual = project_df['Iststunden'].sum()
+            project_activities_count = len(project_df)
+            project_fulfillment = (project_total_actual / project_total_target * 100) if project_total_target > 0 else 0
+            project_kunde = project_df['Kunde'].iloc[0] if len(project_df) > 0 else ''
+            project_status = self.calculate_fulfillment_status(project_total_actual, project_total_target)
+
+            # Create expander with project summary
+            expander_title = f"📂 {projekt} - {project_kunde} | Soll: {project_total_target:.1f}h | Ist: {project_total_actual:.1f}h | {project_status}"
+
+            with st.expander(expander_title, expanded=True):
+                # Show project metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Tätigkeiten", project_activities_count)
+                with col2:
+                    st.metric("Sollstunden", f"{project_total_target:.1f}")
+                with col3:
+                    st.metric("Iststunden", f"{project_total_actual:.1f}")
+                with col4:
+                    st.metric("Erfüllung", f"{project_fulfillment:.1f}%")
+
+                # Configure column display
+                column_config = {
+                    'Sollstunden': st.column_config.NumberColumn(
+                        'Sollstunden (verkauft)',
+                        help="Klicken Sie zum Bearbeiten der Sollstunden",
+                        min_value=0,
+                        max_value=1000,
+                        step=0.5,
+                        format="%.1f STD"
+                    ),
+                    'Anteil am Projekt (%)': st.column_config.NumberColumn(
+                        'Anteil am Projekt (%)',
+                        help="Prozentsatz dieser Tätigkeit am Gesamtprojekt",
+                        format="%.1f%%"
+                    ),
+                    'Erfüllungsstand (%)': st.column_config.NumberColumn(
+                        'Erfüllungsstand (%)',
+                        help="Automatisch berechnet: Ist/Soll * 100",
+                        format="%.1f%%"
+                    ),
+                    'Iststunden': st.column_config.NumberColumn(
+                        'Iststunden',
+                        help="Aus Zeiterfassung aggregiert",
+                        format="%.1f STD"
+                    ),
+                    'Status': st.column_config.TextColumn(
+                        'Status',
+                        help="🟢 ≤100% | 🟡 100-110% | 🔴 >110%"
+                    )
+                }
+
+                # Show editable dataframe for this project (with fallback for older Streamlit versions)
+                try:
+                    edited_project_data = st.data_editor(
+                        project_df,
+                        column_config=column_config,
+                        width='stretch',
+                        disabled=['Projekt', 'Tätigkeit/Activity', 'Anteil am Projekt (%)', 'Erfüllungsstand (%)', 'Status', 'Iststunden', 'Kunde'],
+                        hide_index=True,
+                        key=f"editor_{projekt}"
+                    )
+                except Exception as e:
+                    # Fallback for older Streamlit versions
+                    st.warning("Verwende vereinfachte Tabellen-Ansicht (ältere Streamlit Version)")
+                    st.dataframe(project_df, width='stretch')
+                    edited_project_data = project_df  # No editing in fallback mode
+
+                # Process any changes in target hours for this project
+                if not edited_project_data.equals(project_df):
+                    self.process_target_hour_changes(project_df, edited_project_data)
+                    st.rerun()
+
+                # Collect edited data
+                all_edited_data.append(edited_project_data)
+
+        # Combine all edited data
+        if all_edited_data:
+            combined_edited_data = pd.concat(all_edited_data, ignore_index=True)
+            return combined_edited_data
+
+        return dashboard_df
     
     def process_target_hour_changes(self, original_df: pd.DataFrame, edited_df: pd.DataFrame):
         """Process changes in target hours"""
