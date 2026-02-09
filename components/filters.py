@@ -138,6 +138,28 @@ class FilterManager:
         else:
             return selected_customers
 
+    def employee_filter(self, df: pd.DataFrame) -> List[str]:
+        """Filter by employee (Mitarbeiter)"""
+        if df.empty:
+            return []
+
+        employees = sorted(df['Name'].unique()) if 'Name' in df.columns else []
+
+        if not employees:
+            return []
+
+        selected_employees = st.multiselect(
+            "👤 Mitarbeiter Filter",
+            options=["Alle"] + employees,
+            default=["Alle"],
+            help="Filtern Sie nach spezifischen Mitarbeitern"
+        )
+
+        if "Alle" in selected_employees:
+            return employees
+        else:
+            return selected_employees
+
     def search_filter(self) -> str:
         """Text search filter"""
         search_term = st.text_input(
@@ -173,6 +195,11 @@ class FilterManager:
         if 'selected_customers' in filters and filters['selected_customers']:
             if 'Kundenname' in filtered_df.columns:
                 filtered_df = filtered_df[filtered_df['Kundenname'].isin(filters['selected_customers'])]
+
+        # Apply employee filter
+        if 'selected_employees' in filters and filters['selected_employees']:
+            if 'Name' in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df['Name'].isin(filters['selected_employees'])]
 
         # Apply search filter
         if 'search_term' in filters and filters['search_term']:
@@ -223,6 +250,12 @@ class FilterManager:
                 active_filters.append(f"Kunden: {', '.join(filters['selected_customers'])}")
             else:
                 active_filters.append(f"Kunden: {len(filters['selected_customers'])} ausgewählt")
+
+        if 'selected_employees' in filters and filters['selected_employees']:
+            if len(filters['selected_employees']) <= 3:
+                active_filters.append(f"Mitarbeiter: {', '.join(filters['selected_employees'])}")
+            else:
+                active_filters.append(f"Mitarbeiter: {len(filters['selected_employees'])} ausgewählt")
 
         if 'search_term' in filters and filters['search_term']:
             active_filters.append(f"Suche: '{filters['search_term']}'")

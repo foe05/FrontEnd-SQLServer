@@ -299,7 +299,18 @@ class TimeTrackingApp:
             
             # Date filters
             date_filters = filter_manager.date_filter()
-            
+
+            # Load data for filter options
+            with st.spinner("Lade Daten..."):
+                preview_data = db_config.get_aggregated_data(selected_projects, date_filters, hours_column='FaktStd')
+
+            if preview_data.empty:
+                st.info("Keine Daten verfügbar für Filter.")
+                selected_employees = []
+            else:
+                # Employee filter
+                selected_employees = filter_manager.employee_filter(preview_data)
+
             # Additional filters
             search_term = filter_manager.search_filter()
             
@@ -344,6 +355,7 @@ class TimeTrackingApp:
                 filter_params = {
                     'search_term': search_term,
                     'selected_customers': selected_customers,
+                    'selected_employees': selected_employees,
                 }
 
                 filtered_data = filter_manager.apply_filters(raw_data, filter_params)
@@ -358,8 +370,9 @@ class TimeTrackingApp:
                 filter_manager.show_filter_summary({
                     **date_filters,
                     'selected_projects': selected_projects,
-                    'search_term': search_term,
-                    'selected_customers': selected_customers
+                    'selected_customers': selected_customers,
+                    'selected_employees': selected_employees,
+                    'search_term': search_term
                 })
                 
                 # Tab-Navigation (conditional for admin)
