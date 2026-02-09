@@ -237,10 +237,11 @@ class DatabaseConfig:
         where_clause = " AND ".join(where_conditions)
         
         query = f"""
-        SELECT 
+        SELECT
             [Projekt],
             [ProjektNr],
             [Kundenname],
+            [Name],
             [Verwendung] as Activity,
             SUM(CAST([{hours_column}] as FLOAT)) as ActualHours,
             COUNT(*) as EntryCount,
@@ -248,7 +249,7 @@ class DatabaseConfig:
             MAX([Datum]) as LastEntry
         FROM ZV
         WHERE {where_clause}
-        GROUP BY [Projekt], [ProjektNr], [Kundenname], [Verwendung]
+        GROUP BY [Projekt], [ProjektNr], [Kundenname], [Name], [Verwendung]
         ORDER BY [Projekt], SUM(CAST([{hours_column}] as FLOAT)) DESC
         """
         
