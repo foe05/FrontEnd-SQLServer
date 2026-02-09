@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/.auto-claude/specs/001-add-customer-kundenname-filter/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/.auto-claude/specs/001-add-customer-kundenname-filter/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/worktrees/tasks/001-add-customer-kundenname-filter/.auto-claude/specs/001-add-customer-kundenname-filter/**)",
+      "Read(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/**)",
+      "Write(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/**)",
+      "Edit(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/**)",
+      "Glob(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/**)",
+      "Grep(/home/foe/9_sideprojects/GITHUB/intend-FrontEnd-SQLServer/.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
