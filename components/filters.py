@@ -234,7 +234,8 @@ class FilterManager:
         """Reset all filters to default"""
         filter_keys = [
             'selected_projects',
-            'selected_activities', 
+            'selected_activities',
+            'selected_customers',
             'search_term'
         ]
         
