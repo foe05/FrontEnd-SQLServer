@@ -289,3 +289,125 @@ def show_chart_skeleton(
 
     # Render skeleton chart
     st.markdown(chart_html, unsafe_allow_html=True)
+
+
+def show_metrics_skeleton(
+    num_metrics: int = 4,
+    show_delta: bool = True
+) -> None:
+    """
+    Renders skeleton placeholders for metric cards with shimmer effect.
+
+    Args:
+        num_metrics: Number of metric cards to display (default: 4)
+        show_delta: Whether to show delta indicator placeholder (default: True)
+
+    Usage:
+        # Show skeleton while metrics are loading
+        if data_loading:
+            show_metrics_skeleton(num_metrics=4, show_delta=True)
+        else:
+            cols = st.columns(4)
+            with cols[0]:
+                st.metric("Label", "Value", delta="Delta")
+    """
+
+    # CSS for shimmer animation and metric skeleton
+    metrics_css = """
+    <style>
+    @keyframes shimmer {
+        0% {
+            background-position: -1000px 0;
+        }
+        100% {
+            background-position: 1000px 0;
+        }
+    }
+
+    .skeleton-metrics-container {
+        display: flex;
+        gap: 16px;
+        margin: 10px 0;
+        width: 100%;
+    }
+
+    .skeleton-metric-card {
+        flex: 1;
+        padding: 16px;
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        min-width: 0;
+    }
+
+    .skeleton-metric-label {
+        height: 14px;
+        width: 70%;
+        background: linear-gradient(
+            90deg,
+            #d0d0d0 0%,
+            #c0c0c0 20%,
+            #d0d0d0 40%,
+            #d0d0d0 100%
+        );
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite linear;
+        border-radius: 4px;
+        margin-bottom: 12px;
+    }
+
+    .skeleton-metric-value {
+        height: 32px;
+        width: 85%;
+        background: linear-gradient(
+            90deg,
+            #e8e8e8 0%,
+            #d8d8d8 20%,
+            #e8e8e8 40%,
+            #e8e8e8 100%
+        );
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite linear;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
+
+    .skeleton-metric-delta {
+        height: 12px;
+        width: 50%;
+        background: linear-gradient(
+            90deg,
+            #d8d8d8 0%,
+            #c8c8c8 20%,
+            #d8d8d8 40%,
+            #d8d8d8 100%
+        );
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite linear;
+        border-radius: 3px;
+    }
+    </style>
+    """
+
+    # Inject CSS
+    st.markdown(metrics_css, unsafe_allow_html=True)
+
+    # Build metrics HTML
+    metrics_html = '<div class="skeleton-metrics-container">'
+
+    for i in range(num_metrics):
+        metrics_html += '''
+        <div class="skeleton-metric-card">
+            <div class="skeleton-metric-label"></div>
+            <div class="skeleton-metric-value"></div>
+        '''
+
+        if show_delta:
+            metrics_html += '<div class="skeleton-metric-delta"></div>'
+
+        metrics_html += '</div>'
+
+    metrics_html += '</div>'
+
+    # Render skeleton metrics
+    st.markdown(metrics_html, unsafe_allow_html=True)
