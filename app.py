@@ -441,7 +441,7 @@ class TimeTrackingApp:
                             
                             try:
                                 # Daten laden
-                                project_bookings = db_config.get_project_bookings([projekt], hours_column)
+                                project_bookings = db_config.get_project_bookings([projekt], hours_column, filters=date_filters)
                                 
                                 if project_bookings.empty:
                                     st.info(f"Keine Buchungsdaten für Projekt '{projekt}' verfügbar")
@@ -500,7 +500,7 @@ class TimeTrackingApp:
                             
                             try:
                                 # Daten laden
-                                project_bookings = db_config.get_project_bookings([projekt], hours_column)
+                                project_bookings = db_config.get_project_bookings([projekt], hours_column, filters=date_filters)
                                 
                                 if project_bookings.empty:
                                     st.info(f"Keine Buchungsdaten für Projekt '{projekt}' verfügbar")

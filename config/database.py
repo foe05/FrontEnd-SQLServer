@@ -183,6 +183,16 @@ class DatabaseConfig:
             if filters.get('status'):
                 where_conditions.append("[Status] = ?")
                 params.append(filters['status'])
+            if filters.get('date_range'):
+                date_range = filters['date_range']
+                if len(date_range) == 2:
+                    start_date, end_date = date_range
+                    if start_date:
+                        where_conditions.append("[Datum] >= ?")
+                        params.append(start_date)
+                    if end_date:
+                        where_conditions.append("[Datum] <= ?")
+                        params.append(end_date)
         
         where_clause = " AND ".join(where_conditions)
         
@@ -216,15 +226,15 @@ class DatabaseConfig:
         """Get aggregated time data by activity (Verwendung)"""
         if not projects:
             return pd.DataFrame()
-            
+
         where_conditions = []
         params = []
-        
+
         # Project filter (using ProjektNr)
         placeholders = ','.join(['?' for _ in projects])
         where_conditions.append(f"[ProjektNr] IN ({placeholders})")
         params.extend(projects)
-        
+
         # Additional filters
         if filters:
             if filters.get('year'):
@@ -233,7 +243,17 @@ class DatabaseConfig:
             if filters.get('month'):
                 where_conditions.append("[Monat] = ?")
                 params.append(filters['month'])
-        
+            if filters.get('date_range'):
+                date_range = filters['date_range']
+                if len(date_range) == 2:
+                    start_date, end_date = date_range
+                    if start_date:
+                        where_conditions.append("[Datum] >= ?")
+                        params.append(start_date)
+                    if end_date:
+                        where_conditions.append("[Datum] <= ?")
+                        params.append(end_date)
+
         where_clause = " AND ".join(where_conditions)
         
         query = f"""
@@ -256,44 +276,65 @@ class DatabaseConfig:
         return self.execute_query(query, tuple(params))
 
     @st.cache_data(ttl=3600)  # Cache für 1 Stunde
-    def get_project_bookings(_self, projects: list, hours_column: str = "FaktStd", activity: str = None) -> pd.DataFrame:
+    def get_project_bookings(_self, projects: list, hours_column: str = "FaktStd", activity: str = None, filters: Dict[str, Any] = None) -> pd.DataFrame:
         """
         Lädt Buchungsdaten für Zeitreihen-Analysen.
-        
+
         Args:
             projects: Liste der Projekt-IDs (ProjektNr wie P24SAN04)
             hours_column: Spalte für Stunden (Zeit oder FaktStd)
             activity: Optional Activity-Filter
-            
+            filters: Optional additional filters (date_range, etc.)
+
         Returns:
             DataFrame mit [DatumBuchung, Stunden, Activity, Projekt]
         """
         if not PYODBC_AVAILABLE:
             logging.warning("pyodbc not available - returning empty DataFrame")
             return pd.DataFrame()
-        
+
         if not projects:
             return pd.DataFrame()
-        
+
+        where_conditions = []
+        params = []
+
+        # Project filter (using ProjektNr)
         placeholders = ','.join(['?' for _ in projects])
-        params = list(projects)
-        
+        where_conditions.append(f"[ProjektNr] IN ({placeholders})")
+        params.extend(projects)
+
+        # Activity filter
+        if activity:
+            where_conditions.append("[Verwendung] = ?")
+            params.append(activity)
+
+        # Additional filters
+        if filters:
+            if filters.get('date_range'):
+                date_range = filters['date_range']
+                if len(date_range) == 2:
+                    start_date, end_date = date_range
+                    if start_date:
+                        where_conditions.append("[Datum] >= ?")
+                        params.append(start_date)
+                    if end_date:
+                        where_conditions.append("[Datum] <= ?")
+                        params.append(end_date)
+
+        where_clause = " AND ".join(where_conditions)
+
         query = f"""
-        SELECT 
+        SELECT
             [DatumBuchung],
             [Projekt],
             [Verwendung] as Activity,
             CAST([{hours_column}] as FLOAT) as Stunden
         FROM ZV
-        WHERE [ProjektNr] IN ({placeholders})
+        WHERE {where_clause}
+        ORDER BY [DatumBuchung] ASC
         """
-        
-        if activity:
-            query += " AND [Verwendung] = ?"
-            params.append(activity)
-        
-        query += " ORDER BY [DatumBuchung] ASC"
-        
+
         return _self.execute_query(query, tuple(params))
 
     def validate_project_exists(self, project_id: str) -> bool:
