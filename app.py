@@ -338,31 +338,32 @@ class TimeTrackingApp:
         if 'data_loading' not in st.session_state:
             st.session_state.data_loading = True
 
-        # Load data
+        # Load data with spinner (wraps ONLY data fetching, not rendering)
         try:
-            # Get aggregated time data
-            raw_data = db_config.get_aggregated_data(selected_projects, date_filters, hours_column)
+            with st.spinner('Lade Daten...'):
+                # Get aggregated time data
+                raw_data = db_config.get_aggregated_data(selected_projects, date_filters, hours_column)
 
-            if raw_data.empty:
-                st.info("Keine Daten für die ausgewählten Filter gefunden.")
+                if raw_data.empty:
+                    st.info("Keine Daten für die ausgewählten Filter gefunden.")
+                    st.session_state.data_loading = False
+                    return
+
+                # Apply additional filters
+                filter_params = {
+                    'search_term': search_term,
+                }
+
+                filtered_data = filter_manager.apply_filters(raw_data, filter_params)
+
+                # Create dashboard table
+                dashboard_df = self.create_dashboard_table(filtered_data)
+
+                # Create project summary
+                project_summary_df = self.create_project_summary(filtered_data)
+
+                # Mark data as loaded
                 st.session_state.data_loading = False
-                return
-
-            # Apply additional filters
-            filter_params = {
-                'search_term': search_term,
-            }
-
-            filtered_data = filter_manager.apply_filters(raw_data, filter_params)
-
-            # Create dashboard table
-            dashboard_df = self.create_dashboard_table(filtered_data)
-
-            # Create project summary
-            project_summary_df = self.create_project_summary(filtered_data)
-
-            # Mark data as loaded
-            st.session_state.data_loading = False
 
             # Show filter summary
             filter_manager.show_filter_summary({
