@@ -98,24 +98,46 @@ class FilterManager:
         """Filter by activity/usage (Verwendung)"""
         if df.empty:
             return []
-        
+
         activities = sorted(df['Activity'].unique()) if 'Activity' in df.columns else []
-        
+
         if not activities:
             return []
-        
+
         selected_activities = st.multiselect(
             "🎯 Tätigkeiten Filter",
             options=["Alle"] + activities,
             default=["Alle"],
             help="Filtern Sie nach spezifischen Tätigkeiten"
         )
-        
+
         if "Alle" in selected_activities:
             return activities
         else:
             return selected_activities
-    
+
+    def employee_filter(self, df: pd.DataFrame) -> List[str]:
+        """Filter by employee (Mitarbeiter)"""
+        if df.empty:
+            return []
+
+        employees = sorted(df['Name'].unique()) if 'Name' in df.columns else []
+
+        if not employees:
+            return []
+
+        selected_employees = st.multiselect(
+            "👤 Mitarbeiter Filter",
+            options=["Alle"] + employees,
+            default=["Alle"],
+            help="Filtern Sie nach spezifischen Mitarbeitern"
+        )
+
+        if "Alle" in selected_employees:
+            return employees
+        else:
+            return selected_employees
+
     def search_filter(self) -> str:
         """Text search filter"""
         search_term = st.text_input(
