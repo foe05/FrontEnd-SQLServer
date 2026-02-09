@@ -183,6 +183,16 @@ class DatabaseConfig:
             if filters.get('status'):
                 where_conditions.append("[Status] = ?")
                 params.append(filters['status'])
+            if filters.get('date_range'):
+                date_range = filters['date_range']
+                if len(date_range) == 2:
+                    start_date, end_date = date_range
+                    if start_date:
+                        where_conditions.append("[Datum] >= ?")
+                        params.append(start_date)
+                    if end_date:
+                        where_conditions.append("[Datum] <= ?")
+                        params.append(end_date)
         
         where_clause = " AND ".join(where_conditions)
         
