@@ -68,3 +68,14 @@ dev_cache/
 # User-specific files (keep users.json.example but ignore local users.json with real data)
 config/users_prod.json
 config/users_local.json
+
+# Auto Claude data directory
+.auto-claude/
+
+# Auto Claude generated files
+.auto-claude-security.json
+.auto-claude-status
+.claude_settings.json
+.worktrees/
+.security-key
+logs/security/
