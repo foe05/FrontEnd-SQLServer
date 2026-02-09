@@ -73,12 +73,14 @@ class FilterManager:
         # Convert filters to database format
         filters = {"year": year}
 
-        # Add date range filter
+        # Add date range filter as tuple for database queries
         if isinstance(date_range, tuple) and len(date_range) == 2:
+            filters["date_range"] = (date_range[0], date_range[1])
             filters["start_date"] = date_range[0]
             filters["end_date"] = date_range[1]
         elif isinstance(date_range, date):
             # Single date selected
+            filters["date_range"] = (date_range, date_range)
             filters["start_date"] = date_range
             filters["end_date"] = date_range
 
