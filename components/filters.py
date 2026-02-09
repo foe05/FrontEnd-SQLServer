@@ -168,7 +168,12 @@ class FilterManager:
         if 'selected_activities' in filters and filters['selected_activities']:
             if 'Activity' in filtered_df.columns:
                 filtered_df = filtered_df[filtered_df['Activity'].isin(filters['selected_activities'])]
-        
+
+        # Apply employee filter
+        if 'selected_employees' in filters and filters['selected_employees']:
+            if 'Name' in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df['Name'].isin(filters['selected_employees'])]
+
         # Apply search filter
         if 'search_term' in filters and filters['search_term']:
             search_cols = ['Activity', 'Projekt', 'Kundenname']
