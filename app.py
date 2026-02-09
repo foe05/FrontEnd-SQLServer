@@ -333,10 +333,10 @@ class TimeTrackingApp:
             st.error("❌ Datenbankverbindung fehlgeschlagen. Bitte prüfen Sie die Konfiguration.")
             st.info("💡 Tipp: Überprüfen Sie die Environment Variables für SQL Server")
             return
-        
-        # Initialize loading state
-        if 'data_loading' not in st.session_state:
-            st.session_state.data_loading = True
+
+        # Set loading state to True before data fetch
+        # This ensures skeletons show on every rerun (e.g., when filters change)
+        st.session_state.data_loading = True
 
         # Load data with spinner (wraps ONLY data fetching, not rendering)
         try:
