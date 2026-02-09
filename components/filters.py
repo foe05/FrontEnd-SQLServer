@@ -167,35 +167,42 @@ class FilterManager:
     def show_filter_summary(self, filters: Dict[str, Any]):
         """Show applied filters summary"""
         active_filters = []
-        
+
         if 'year' in filters:
             active_filters.append(f"Jahr: {filters['year']}")
-        
+
         if 'month' in filters:
             active_filters.append(f"Monat: {filters['month']:02d}")
-        
+
         if 'quarter_months' in filters:
             quarters = {
                 str([1,2,3]): "Q1",
-                str([4,5,6]): "Q2", 
+                str([4,5,6]): "Q2",
                 str([7,8,9]): "Q3",
                 str([10,11,12]): "Q4"
             }
             quarter_key = str(filters['quarter_months'])
             if quarter_key in quarters:
                 active_filters.append(f"Quartal: {quarters[quarter_key]}")
-        
+
         if 'selected_activities' in filters and filters['selected_activities']:
             if len(filters['selected_activities']) <= 3:
                 active_filters.append(f"Tätigkeiten: {', '.join(filters['selected_activities'])}")
             else:
                 active_filters.append(f"Tätigkeiten: {len(filters['selected_activities'])} ausgewählt")
-        
+
         if 'search_term' in filters and filters['search_term']:
             active_filters.append(f"Suche: '{filters['search_term']}'")
-        
+
         if active_filters:
-            st.info("**Aktive Filter:** " + " | ".join(active_filters))
+            # Display prominent filter count badge
+            col1, col2 = st.columns([1, 4])
+
+            with col1:
+                st.metric("🔍 Aktive Filter", len(active_filters))
+
+            with col2:
+                st.info("**Filter Details:** " + " | ".join(active_filters))
         
     def reset_filters(self):
         """Reset all filters to default"""
