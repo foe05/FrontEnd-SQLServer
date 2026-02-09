@@ -34,8 +34,18 @@ class FilterManager:
     
     def date_filter(self) -> Dict[str, Any]:
         """Date range and period filters"""
+        # Date range picker
+        default_start_date = date(self.current_year, 1, 1)
+        default_end_date = date.today()
+
+        date_range = st.date_input(
+            "📅 Datumsbereich",
+            value=(default_start_date, default_end_date),
+            help="Wählen Sie einen Start- und Enddatum für die Auswertung"
+        )
+
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             year = st.selectbox(
                 "📅 Jahr",
@@ -43,7 +53,7 @@ class FilterManager:
                 index=2,  # Current year
                 help="Wählen Sie das Jahr für die Auswertung"
             )
-        
+
         with col2:
             month = st.selectbox(
                 "📅 Monat",
@@ -51,7 +61,7 @@ class FilterManager:
                 index=0,
                 help="Wählen Sie einen spezifischen Monat oder 'Alle'"
             )
-        
+
         with col3:
             quarter = st.selectbox(
                 "📅 Quartal",
@@ -62,20 +72,29 @@ class FilterManager:
         
         # Convert filters to database format
         filters = {"year": year}
-        
+
+        # Add date range filter
+        if isinstance(date_range, tuple) and len(date_range) == 2:
+            filters["start_date"] = date_range[0]
+            filters["end_date"] = date_range[1]
+        elif isinstance(date_range, date):
+            # Single date selected
+            filters["start_date"] = date_range
+            filters["end_date"] = date_range
+
         if month != "Alle":
             filters["month"] = int(month)
-        
+
         if quarter != "Alle":
             quarter_months = {
                 "Q1": [1, 2, 3],
-                "Q2": [4, 5, 6], 
+                "Q2": [4, 5, 6],
                 "Q3": [7, 8, 9],
                 "Q4": [10, 11, 12]
             }
             if month == "Alle":  # Only apply quarter if no specific month selected
                 filters["quarter_months"] = quarter_months[quarter]
-        
+
         return filters
     
     def status_filter(self) -> List[str]:
