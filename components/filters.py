@@ -198,7 +198,7 @@ class FilterManager:
         if 'year' in filters:
             year_text = f"Jahr: {filters['year']}"
             active_filters.append(year_text)
-            filter_details.append((year_text, 'year', None))
+            # Year is a required field - don't add to filter_details (no clear button)
 
         if 'month' in filters:
             month_text = f"Monat: {filters['month']:02d}"
