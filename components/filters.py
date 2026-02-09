@@ -217,7 +217,13 @@ class FilterManager:
                 active_filters.append(f"Tätigkeiten: {', '.join(filters['selected_activities'])}")
             else:
                 active_filters.append(f"Tätigkeiten: {len(filters['selected_activities'])} ausgewählt")
-        
+
+        if 'selected_employees' in filters and filters['selected_employees']:
+            if len(filters['selected_employees']) <= 3:
+                active_filters.append(f"Mitarbeiter: {', '.join(filters['selected_employees'])}")
+            else:
+                active_filters.append(f"Mitarbeiter: {len(filters['selected_employees'])} ausgewählt")
+
         if 'search_term' in filters and filters['search_term']:
             active_filters.append(f"Suche: '{filters['search_term']}'")
         
