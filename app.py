@@ -331,16 +331,21 @@ class TimeTrackingApp:
             with st.spinner("Lade Daten..."):
                 # Get aggregated time data
                 raw_data = db_config.get_aggregated_data(selected_projects, date_filters, hours_column)
-                
+
                 if raw_data.empty:
                     st.info("Keine Daten für die ausgewählten Filter gefunden.")
                     return
-                
+
+                # Customer filter (rendered in sidebar after data is loaded)
+                with st.sidebar:
+                    selected_customers = filter_manager.customer_filter(raw_data)
+
                 # Apply additional filters
                 filter_params = {
                     'search_term': search_term,
+                    'selected_customers': selected_customers,
                 }
-                
+
                 filtered_data = filter_manager.apply_filters(raw_data, filter_params)
                 
                 # Create dashboard table
@@ -353,7 +358,8 @@ class TimeTrackingApp:
                 filter_manager.show_filter_summary({
                     **date_filters,
                     'selected_projects': selected_projects,
-                    'search_term': search_term
+                    'search_term': search_term,
+                    'selected_customers': selected_customers
                 })
                 
                 # Tab-Navigation (conditional for admin)

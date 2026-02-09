@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "001-add-customer-kundenname-filter",
+  "state": "building",
+  "subtasks": {
+    "completed": 1,
+    "total": 5,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Add Customer Filter",
+    "id": null,
+    "total": 5
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 3,
+    "started_at": "2026-02-09T20:51:10.051536"
+  },
+  "last_update": "2026-02-09T20:55:51.275420"
+}

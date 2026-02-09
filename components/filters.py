@@ -98,24 +98,46 @@ class FilterManager:
         """Filter by activity/usage (Verwendung)"""
         if df.empty:
             return []
-        
+
         activities = sorted(df['Activity'].unique()) if 'Activity' in df.columns else []
-        
+
         if not activities:
             return []
-        
+
         selected_activities = st.multiselect(
             "🎯 Tätigkeiten Filter",
             options=["Alle"] + activities,
             default=["Alle"],
             help="Filtern Sie nach spezifischen Tätigkeiten"
         )
-        
+
         if "Alle" in selected_activities:
             return activities
         else:
             return selected_activities
-    
+
+    def customer_filter(self, df: pd.DataFrame) -> List[str]:
+        """Filter by customer name (Kundenname)"""
+        if df.empty:
+            return []
+
+        customers = sorted(df['Kundenname'].unique()) if 'Kundenname' in df.columns else []
+
+        if not customers:
+            return []
+
+        selected_customers = st.multiselect(
+            "👤 Kunden Filter",
+            options=["Alle"] + customers,
+            default=["Alle"],
+            help="Filtern Sie nach spezifischen Kunden"
+        )
+
+        if "Alle" in selected_customers:
+            return customers
+        else:
+            return selected_customers
+
     def search_filter(self) -> str:
         """Text search filter"""
         search_term = st.text_input(
@@ -139,61 +161,72 @@ class FilterManager:
         """Apply all filters to DataFrame"""
         if df.empty:
             return df
-        
+
         filtered_df = df.copy()
-        
+
         # Apply activity filter
         if 'selected_activities' in filters and filters['selected_activities']:
             if 'Activity' in filtered_df.columns:
                 filtered_df = filtered_df[filtered_df['Activity'].isin(filters['selected_activities'])]
-        
+
+        # Apply customer filter
+        if 'selected_customers' in filters and filters['selected_customers']:
+            if 'Kundenname' in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df['Kundenname'].isin(filters['selected_customers'])]
+
         # Apply search filter
         if 'search_term' in filters and filters['search_term']:
             search_cols = ['Activity', 'Projekt', 'Kundenname']
             search_cols = [col for col in search_cols if col in filtered_df.columns]
-            
+
             if search_cols:
                 mask = pd.Series([False] * len(filtered_df))
                 for col in search_cols:
                     mask = mask | filtered_df[col].str.contains(
-                        filters['search_term'], 
-                        case=False, 
+                        filters['search_term'],
+                        case=False,
                         na=False
                     )
                 filtered_df = filtered_df[mask]
-        
+
         return filtered_df
     
     def show_filter_summary(self, filters: Dict[str, Any]):
         """Show applied filters summary"""
         active_filters = []
-        
+
         if 'year' in filters:
             active_filters.append(f"Jahr: {filters['year']}")
-        
+
         if 'month' in filters:
             active_filters.append(f"Monat: {filters['month']:02d}")
-        
+
         if 'quarter_months' in filters:
             quarters = {
                 str([1,2,3]): "Q1",
-                str([4,5,6]): "Q2", 
+                str([4,5,6]): "Q2",
                 str([7,8,9]): "Q3",
                 str([10,11,12]): "Q4"
             }
             quarter_key = str(filters['quarter_months'])
             if quarter_key in quarters:
                 active_filters.append(f"Quartal: {quarters[quarter_key]}")
-        
+
         if 'selected_activities' in filters and filters['selected_activities']:
             if len(filters['selected_activities']) <= 3:
                 active_filters.append(f"Tätigkeiten: {', '.join(filters['selected_activities'])}")
             else:
                 active_filters.append(f"Tätigkeiten: {len(filters['selected_activities'])} ausgewählt")
-        
+
+        if 'selected_customers' in filters and filters['selected_customers']:
+            if len(filters['selected_customers']) <= 3:
+                active_filters.append(f"Kunden: {', '.join(filters['selected_customers'])}")
+            else:
+                active_filters.append(f"Kunden: {len(filters['selected_customers'])} ausgewählt")
+
         if 'search_term' in filters and filters['search_term']:
             active_filters.append(f"Suche: '{filters['search_term']}'")
-        
+
         if active_filters:
             st.info("**Aktive Filter:** " + " | ".join(active_filters))
         
@@ -201,7 +234,8 @@ class FilterManager:
         """Reset all filters to default"""
         filter_keys = [
             'selected_projects',
-            'selected_activities', 
+            'selected_activities',
+            'selected_customers',
             'search_term'
         ]
         
