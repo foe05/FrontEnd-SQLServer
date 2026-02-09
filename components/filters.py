@@ -186,10 +186,19 @@ class FilterManager:
     def show_filter_summary(self, filters: Dict[str, Any]):
         """Show applied filters summary"""
         active_filters = []
-        
+
         if 'year' in filters:
             active_filters.append(f"Jahr: {filters['year']}")
-        
+
+        # Display date range if selected
+        if 'start_date' in filters and 'end_date' in filters:
+            start = filters['start_date']
+            end = filters['end_date']
+            # Format dates as strings
+            start_str = start.strftime('%Y-%m-%d') if hasattr(start, 'strftime') else str(start)
+            end_str = end.strftime('%Y-%m-%d') if hasattr(end, 'strftime') else str(end)
+            active_filters.append(f"Zeitraum: {start_str} bis {end_str}")
+
         if 'month' in filters:
             active_filters.append(f"Monat: {filters['month']:02d}")
         
