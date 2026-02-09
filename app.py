@@ -197,7 +197,8 @@ class TimeTrackingApp:
         all_edited_data = []
 
         # Group by project
-        for projekt in dashboard_df['Projekt'].unique():
+        project_list = list(dashboard_df['Projekt'].unique())
+        for idx, projekt in enumerate(project_list):
             project_df = dashboard_df[dashboard_df['Projekt'] == projekt].copy()
 
             # Calculate project summary metrics
@@ -208,21 +209,24 @@ class TimeTrackingApp:
             project_kunde = project_df['Kunde'].iloc[0] if len(project_df) > 0 else ''
             project_status = self.calculate_fulfillment_status(project_total_actual, project_total_target)
 
+            # Add prominent project header
+            st.markdown(f"#### 📂 {projekt} - {project_kunde}")
+
+            # Display project summary metrics in columns
+            summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
+            with summary_col1:
+                st.metric("Tätigkeiten", project_activities_count)
+            with summary_col2:
+                st.metric("Sollstunden Gesamt", f"{project_total_target:.1f}h")
+            with summary_col3:
+                st.metric("Iststunden Gesamt", f"{project_total_actual:.1f}h")
+            with summary_col4:
+                st.metric("Status", project_status)
+
             # Create expander with project summary
-            expander_title = f"📂 {projekt} - {project_kunde} | Soll: {project_total_target:.1f}h | Ist: {project_total_actual:.1f}h | {project_status}"
+            expander_title = f"Details anzeigen"
 
             with st.expander(expander_title, expanded=True):
-                # Show project metrics
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Tätigkeiten", project_activities_count)
-                with col2:
-                    st.metric("Sollstunden", f"{project_total_target:.1f}")
-                with col3:
-                    st.metric("Iststunden", f"{project_total_actual:.1f}")
-                with col4:
-                    st.metric("Erfüllung", f"{project_fulfillment:.1f}%")
-
                 # Configure column display
                 column_config = {
                     'Sollstunden': st.column_config.NumberColumn(
@@ -277,6 +281,10 @@ class TimeTrackingApp:
 
                 # Collect edited data
                 all_edited_data.append(edited_project_data)
+
+            # Add visual separator between projects (except after the last one)
+            if idx < len(project_list) - 1:
+                st.markdown("---")
 
         # Combine all edited data
         if all_edited_data:
