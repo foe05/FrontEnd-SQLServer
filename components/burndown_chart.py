@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from typing import Dict, Optional, Tuple
+from components.skeleton_loaders import show_chart_skeleton
 
 def calculate_project_timeline(bookings_df: pd.DataFrame, target_hours: float) -> Dict[str, Optional[datetime]]:
     """
@@ -86,22 +87,24 @@ def calculate_budget_forecast(bookings_df: pd.DataFrame, target_hours: float) ->
 
 def render_burndown_chart(
     project_id: str,
-    bookings_df: pd.DataFrame, 
+    bookings_df: pd.DataFrame,
     target_hours: float,
     level: str = "project",
     show_scenarios: bool = True,
-    activity: str = None
+    activity: str = None,
+    show_loading: bool = False
 ) -> None:
     """
     Rendert interaktiven Burn-down Chart mit Plotly und Szenarien.
-    
+
     Args:
         project_id: Projekt-ID für Titel
         bookings_df: DataFrame mit [DatumBuchung, Stunden]
         target_hours: Sollstunden aus Cache
         level: "project" oder "activity"
         show_scenarios: Wenn True, zeige 3 Prognose-Szenarien
-    
+        show_loading: Wenn True, zeige Skeleton Loader statt Chart
+
     Features:
     - Sollstunden-Linie (konstant über Projektlaufzeit)
     - Ist-Stunden kumuliert (aus Buchungen)
@@ -109,7 +112,12 @@ def render_burndown_chart(
     - Status-Färbung (Grün/Gelb/Rot)
     - Budget-Ende-Datum prominent angezeigt
     """
-    
+
+    # Show skeleton during loading
+    if show_loading:
+        show_chart_skeleton(height=500, chart_type="line")
+        return
+
     if bookings_df.empty:
         st.warning(f"Keine Buchungsdaten verfügbar für {project_id}")
         return
@@ -276,14 +284,20 @@ def render_burndown_chart(
         else:
             st.metric("Budget-Ende", "Keine Prognose")
 
-def render_weekly_trend(bookings_df: pd.DataFrame, project_id: str) -> None:
+def render_weekly_trend(bookings_df: pd.DataFrame, project_id: str, show_loading: bool = False) -> None:
     """
     Zeigt gebuchte Stunden pro Woche als Balkendiagramm.
-    
+
     Args:
         bookings_df: DataFrame mit [DatumBuchung, Stunden]
         project_id: Projekt-ID für Titel
+        show_loading: Wenn True, zeige Skeleton Loader statt Chart
     """
+    # Show skeleton during loading
+    if show_loading:
+        show_chart_skeleton(height=400, chart_type="bar")
+        return
+
     if bookings_df.empty:
         st.info("Keine Daten für Wochentrend verfügbar")
         return
@@ -344,14 +358,20 @@ def render_weekly_trend(bookings_df: pd.DataFrame, project_id: str) -> None:
         else:
             st.metric("Ø letzte 4 Wochen", "N/A")
 
-def render_activity_comparison(bookings_df: pd.DataFrame, project_id: str) -> None:
+def render_activity_comparison(bookings_df: pd.DataFrame, project_id: str, show_loading: bool = False) -> None:
     """
     Zeigt zeitlichen Verlauf verschiedener Activities im Vergleich.
-    
+
     Args:
         bookings_df: DataFrame mit [DatumBuchung, Activity, Stunden]
         project_id: Projekt-ID für Titel
+        show_loading: Wenn True, zeige Skeleton Loader statt Chart
     """
+    # Show skeleton during loading
+    if show_loading:
+        show_chart_skeleton(height=500, chart_type="bar")
+        return
+
     if bookings_df.empty or 'Activity' not in bookings_df.columns:
         st.info("Keine Activity-Daten für Vergleich verfügbar")
         return
@@ -393,14 +413,20 @@ def render_activity_comparison(bookings_df: pd.DataFrame, project_id: str) -> No
     
     st.plotly_chart(fig, width='stretch')
 
-def render_cumulative_comparison(bookings_df: pd.DataFrame, target_hours_by_activity: Dict[str, float]) -> None:
+def render_cumulative_comparison(bookings_df: pd.DataFrame, target_hours_by_activity: Dict[str, float], show_loading: bool = False) -> None:
     """
     Zeigt kumulative Stunden pro Activity mit Soll-Linien.
-    
+
     Args:
         bookings_df: DataFrame mit [DatumBuchung, Activity, Stunden]
         target_hours_by_activity: Dict {activity_name: target_hours}
+        show_loading: Wenn True, zeige Skeleton Loader statt Chart
     """
+    # Show skeleton during loading
+    if show_loading:
+        show_chart_skeleton(height=500, chart_type="line")
+        return
+
     if bookings_df.empty or 'Activity' not in bookings_df.columns:
         st.info("Keine Activity-Daten verfügbar")
         return
