@@ -7,10 +7,11 @@ import plotly.graph_objects as go
 from datetime import datetime
 from typing import Optional
 from utils.forecast_engine import (
-    ForecastEngine, 
-    load_forecast_overrides, 
+    ForecastEngine,
+    load_forecast_overrides,
     save_forecast_overrides
 )
+from components.skeleton_loaders import show_chart_skeleton
 
 def render_forecast_scenarios(
     project_id: str,
@@ -231,7 +232,7 @@ def render_scenario_chart(
 ) -> None:
     """
     Visualisiert Szenarien als Burn-down Chart mit 3 Linien.
-    
+
     Args:
         project_id: Projekt-ID
         bookings_df: Buchungsdaten
@@ -242,19 +243,26 @@ def render_scenario_chart(
     """
     if bookings_df.empty or target_hours <= 0:
         return
-    
+
+    # Create placeholder for skeleton loading
+    chart_placeholder = st.empty()
+
+    # Show skeleton while calculating
+    with chart_placeholder.container():
+        show_chart_skeleton(height=500, chart_type="line")
+
     # Ermittele aktiven Wert (Single Source of Truth aus Session State)
     key_suffix = f"{project_id}{'_' + activity if activity else ''}"
     k_use = f"mf_use_{key_suffix}"
     k_hours = f"mf_hours_{key_suffix}"
-    
+
     # Prüfe Session State zuerst
     if use_manual is None:
         use_manual = st.session_state.get(k_use, None)
-    
+
     if manual_hours_per_sprint is None:
         manual_hours_per_sprint = st.session_state.get(k_hours, None)
-    
+
     # Falls Session State leer, versuche gespeicherte Overrides
     if use_manual is None or manual_hours_per_sprint is None:
         overrides = load_forecast_overrides(project_id, activity)
@@ -263,20 +271,20 @@ def render_scenario_chart(
                 use_manual = overrides.get('active', True)
             if manual_hours_per_sprint is None:
                 manual_hours_per_sprint = overrides['hours_per_sprint']
-    
+
     # Bestimme aktiven Wert für Berechnung
     active_hours = manual_hours_per_sprint if use_manual else None
-    
+
     engine = ForecastEngine(bookings_df, target_hours)
     forecast_result = engine.calculate_scenarios(active_hours)
     scenarios = forecast_result['scenarios']
-    
+
     # Historische Daten
     bookings_df['DatumBuchung'] = pd.to_datetime(bookings_df['DatumBuchung'])
     daily_data = bookings_df.groupby('DatumBuchung')['Stunden'].sum().reset_index()
     daily_data = daily_data.sort_values('DatumBuchung')
     daily_data['Stunden_kumuliert'] = daily_data['Stunden'].cumsum()
-    
+
     # Plotly Figure
     fig = go.Figure()
     
@@ -352,23 +360,32 @@ def render_scenario_chart(
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         height=500
     )
-    
-    st.plotly_chart(fig, width='stretch')
+
+    # Replace skeleton with actual chart
+    with chart_placeholder.container():
+        st.plotly_chart(fig, width='stretch')
 
 
 def render_sprint_velocity_chart(sprint_data: pd.DataFrame) -> None:
     """
     Zeigt Sprint-Velocity als Balkendiagramm mit Gewichtung.
-    
+
     Args:
         sprint_data: DataFrame mit Sprint-Informationen
     """
     if sprint_data.empty:
         st.info("Keine Sprint-Daten verfügbar")
         return
-    
+
     st.write("### Sprint-Velocity Analyse")
-    
+
+    # Create placeholder for skeleton loading
+    chart_placeholder = st.empty()
+
+    # Show skeleton while building chart
+    with chart_placeholder.container():
+        show_chart_skeleton(height=350, chart_type="bar")
+
     fig = go.Figure()
     
     # Sprint-Labels
@@ -409,5 +426,7 @@ def render_sprint_velocity_chart(sprint_data: pd.DataFrame) -> None:
         showlegend=False,
         height=350
     )
-    
-    st.plotly_chart(fig, width='stretch')
+
+    # Replace skeleton with actual chart
+    with chart_placeholder.container():
+        st.plotly_chart(fig, width='stretch')
