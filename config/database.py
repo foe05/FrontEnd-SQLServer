@@ -226,15 +226,15 @@ class DatabaseConfig:
         """Get aggregated time data by activity (Verwendung)"""
         if not projects:
             return pd.DataFrame()
-            
+
         where_conditions = []
         params = []
-        
+
         # Project filter (using ProjektNr)
         placeholders = ','.join(['?' for _ in projects])
         where_conditions.append(f"[ProjektNr] IN ({placeholders})")
         params.extend(projects)
-        
+
         # Additional filters
         if filters:
             if filters.get('year'):
@@ -243,7 +243,17 @@ class DatabaseConfig:
             if filters.get('month'):
                 where_conditions.append("[Monat] = ?")
                 params.append(filters['month'])
-        
+            if filters.get('date_range'):
+                date_range = filters['date_range']
+                if len(date_range) == 2:
+                    start_date, end_date = date_range
+                    if start_date:
+                        where_conditions.append("[Datum] >= ?")
+                        params.append(start_date)
+                    if end_date:
+                        where_conditions.append("[Datum] <= ?")
+                        params.append(end_date)
+
         where_clause = " AND ".join(where_conditions)
         
         query = f"""
