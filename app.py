@@ -166,31 +166,38 @@ class TimeTrackingApp:
     
     def show_editable_dashboard(self, dashboard_df: pd.DataFrame):
         """Show the main dashboard with editable target hours"""
+        st.subheader("📊 Projekt Dashboard")
+
+        # Check if data is still loading
+        if st.session_state.get('data_loading', False):
+            # Show skeleton while data is loading
+            st.markdown("### Detailansicht")
+            show_table_skeleton(num_rows=10, num_columns=8)
+            return pd.DataFrame()
+
         if dashboard_df.empty:
             st.warning("Keine Daten verfügbar für die ausgewählten Filter")
             return dashboard_df
-        
-        st.subheader("📊 Projekt Dashboard")
-        
+
         # Display metrics summary
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             total_projects = dashboard_df['Projekt'].nunique()
             st.metric("Projekte", total_projects)
-        
+
         with col2:
             total_activities = len(dashboard_df)
             st.metric("Tätigkeiten", total_activities)
-        
+
         with col3:
             total_actual = dashboard_df['Iststunden'].sum()
             st.metric("Iststunden Gesamt", f"{total_actual:.1f}")
-        
+
         with col4:
             overbooked = len(dashboard_df[dashboard_df['Status'] == '🔴 Überbucht'])
             st.metric("Überbuchte Tätigkeiten", overbooked)
-        
+
         # Show table with editing capabilities
         st.markdown("### Detailansicht")
         
