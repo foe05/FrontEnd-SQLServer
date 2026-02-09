@@ -354,7 +354,7 @@ class TimeTrackingApp:
                     **date_filters,
                     'selected_projects': selected_projects,
                     'search_term': search_term
-                })
+                }, record_count=len(filtered_data))
                 
                 # Tab-Navigation (conditional for admin)
                 if auth_manager.has_permission(current_user['email'], 'admin'):
