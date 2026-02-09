@@ -164,8 +164,8 @@ class FilterManager:
         
         return filtered_df
     
-    def show_filter_summary(self, filters: Dict[str, Any]):
-        """Show applied filters summary"""
+    def show_filter_summary(self, filters: Dict[str, Any], record_count: int = None):
+        """Show applied filters summary with record count"""
         active_filters = []
 
         if 'year' in filters:
@@ -195,14 +195,26 @@ class FilterManager:
             active_filters.append(f"Suche: '{filters['search_term']}'")
 
         if active_filters:
-            # Display prominent filter count badge
-            col1, col2 = st.columns([1, 4])
+            # Display prominent filter count badge and record count
+            if record_count is not None:
+                col1, col2, col3 = st.columns([1, 1, 3])
 
-            with col1:
-                st.metric("🔍 Aktive Filter", len(active_filters))
+                with col1:
+                    st.metric("🔍 Aktive Filter", len(active_filters))
 
-            with col2:
-                st.info("**Filter Details:** " + " | ".join(active_filters))
+                with col2:
+                    st.metric("📊 Datensätze", record_count)
+
+                with col3:
+                    st.info("**Filter Details:** " + " | ".join(active_filters))
+            else:
+                col1, col2 = st.columns([1, 4])
+
+                with col1:
+                    st.metric("🔍 Aktive Filter", len(active_filters))
+
+                with col2:
+                    st.info("**Filter Details:** " + " | ".join(active_filters))
         
     def reset_filters(self):
         """Reset all filters to default"""
