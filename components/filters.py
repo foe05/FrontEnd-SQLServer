@@ -13,22 +13,39 @@ class FilterManager:
         self.current_year = datetime.now().year
         
     def project_filter(self, available_projects: List[str]) -> List[str]:
-        """Project selection filter"""
+        """Project selection filter using checkboxes"""
         if not available_projects:
             st.warning("Keine Projekte verfügbar für diesen Benutzer")
             return []
-        
-        # Initialize session state
-        if 'selected_projects' not in st.session_state:
-            st.session_state.selected_projects = available_projects[:1] if available_projects else []
-        
-        selected = st.multiselect(
-            "🏗️ Projekte auswählen",
-            options=available_projects,
-            default=st.session_state.selected_projects,
-            help="Wählen Sie ein oder mehrere Projekte aus"
-        )
-        
+
+        st.markdown("**🏗️ Projekte auswählen**")
+
+        # Initialize session state for each project checkbox
+        for proj in available_projects:
+            key = f"proj_{proj}"
+            if key not in st.session_state:
+                # Default: first project selected
+                st.session_state[key] = (proj == available_projects[0])
+
+        # Select all / deselect all toggle
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Alle", key="select_all_projects", use_container_width=True):
+                for proj in available_projects:
+                    st.session_state[f"proj_{proj}"] = True
+                st.rerun()
+        with col2:
+            if st.button("Keine", key="deselect_all_projects", use_container_width=True):
+                for proj in available_projects:
+                    st.session_state[f"proj_{proj}"] = False
+                st.rerun()
+
+        # Render a checkbox for each project
+        selected = []
+        for proj in available_projects:
+            if st.checkbox(proj, key=f"proj_{proj}"):
+                selected.append(proj)
+
         st.session_state.selected_projects = selected
         return selected
     
@@ -379,11 +396,16 @@ class FilterManager:
             'selected_customers',
             'search_term'
         ]
-        
+
         for key in filter_keys:
             if key in st.session_state:
                 del st.session_state[key]
-        
+
+        # Reset project checkboxes
+        for key in list(st.session_state.keys()):
+            if key.startswith("proj_"):
+                del st.session_state[key]
+
         st.rerun()
 
 # Global filter manager instance

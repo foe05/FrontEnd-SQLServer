@@ -84,7 +84,7 @@ class TestDatabaseConfig:
             for activity in activities:
                 entries.append({
                     'Name': 'Test User',
-                    'Zeit': 25.5,
+                    'FaktStd': 25.5,
                     'Projekt': project,
                     'Verwendung': activity,
                     'Kundenname': f'Kunde {project}',
