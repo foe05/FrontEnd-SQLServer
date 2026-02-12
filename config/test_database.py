@@ -5,21 +5,26 @@ import os
 import pandas as pd
 import streamlit as st
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class TestDatabaseConfig:
     """Mock database configuration for testing with dummy data"""
-    
+
     def __init__(self):
         self.test_data_dir = "test_data"
         self.dummy_data_loaded = False
         self.time_entries_df = pd.DataFrame()
         self.aggregated_df = pd.DataFrame()
-        
+
+        # In-memory budget history for test mode
+        self.budget_history = []
+        self.budget_id_counter = 1
+
         # Load dummy data on initialization
         self.load_dummy_data()
+        self._initialize_test_budgets()
     
     def load_dummy_data(self):
         """Load dummy data from files"""
@@ -343,6 +348,242 @@ class TestDatabaseConfig:
         
         df = pd.DataFrame(data)
         return df.sort_values('DatumBuchung') if not df.empty else df
+
+    # ============================================
+    # Budget History Management (Test Mode)
+    # ============================================
+
+    def _initialize_test_budgets(self):
+        """Initialize some test budget entries"""
+        test_budgets = [
+            {
+                'ProjectID': 'P24ABC01',
+                'Activity': 'Implementierung',
+                'Hours': 100.0,
+                'ChangeType': 'initial',
+                'ValidFrom': '2024-01-01',
+                'Reason': 'Initialisiertes Testbudget',
+                'Reference': 'TEST-001',
+                'CreatedBy': 'test@example.com',
+                'CreatedAt': '2024-01-01 10:00:00'
+            },
+            {
+                'ProjectID': 'P24ABC01',
+                'Activity': 'Testing & QA',
+                'Hours': 50.0,
+                'ChangeType': 'initial',
+                'ValidFrom': '2024-01-01',
+                'Reason': 'Initialisiertes Testbudget',
+                'Reference': 'TEST-001',
+                'CreatedBy': 'test@example.com',
+                'CreatedAt': '2024-01-01 10:00:00'
+            },
+            {
+                'ProjectID': 'P24XYZ01',
+                'Activity': 'Implementierung',
+                'Hours': 80.0,
+                'ChangeType': 'initial',
+                'ValidFrom': '2024-01-01',
+                'Reason': 'Initialisiertes Testbudget',
+                'Reference': 'TEST-002',
+                'CreatedBy': 'test@example.com',
+                'CreatedAt': '2024-01-01 10:00:00'
+            }
+        ]
+
+        for budget in test_budgets:
+            budget['ID'] = self.budget_id_counter
+            self.budget_id_counter += 1
+            self.budget_history.append(budget)
+
+    def execute_non_query(self, query: str, params: Optional[tuple] = None) -> bool:
+        """
+        Mock non-query execution for test mode
+
+        Args:
+            query: SQL command (ignored in test mode)
+            params: Parameters for the command
+
+        Returns:
+            Always True in test mode
+        """
+        logging.info(f"Mock non-query execution: {query[:100]}...")
+        return True
+
+    def save_budget_entry(
+        self,
+        project_id: str,
+        activity: str,
+        hours: float,
+        change_type: str,
+        valid_from: str,
+        reason: str,
+        reference: Optional[str],
+        created_by: str
+    ) -> bool:
+        """
+        Save a new budget entry to in-memory storage (test mode)
+
+        Args:
+            project_id: Project identifier
+            activity: Activity name
+            hours: Number of hours
+            change_type: Type of change
+            valid_from: Valid from date (ISO format)
+            reason: Explanation
+            reference: Optional reference
+            created_by: User email
+
+        Returns:
+            True if successful
+        """
+        try:
+            entry = {
+                'ID': self.budget_id_counter,
+                'ProjectID': project_id,
+                'Activity': activity,
+                'Hours': hours,
+                'ChangeType': change_type,
+                'ValidFrom': valid_from,
+                'Reason': reason,
+                'Reference': reference,
+                'CreatedBy': created_by,
+                'CreatedAt': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+            self.budget_history.append(entry)
+            self.budget_id_counter += 1
+
+            logging.info(f"Saved budget entry: {project_id} - {activity} - {hours}h")
+            return True
+
+        except Exception as e:
+            logging.error(f"Error saving budget entry: {e}")
+            return False
+
+    def get_budget_history(
+        self,
+        project_id: str,
+        activity: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Get budget history from in-memory storage (test mode)
+
+        Args:
+            project_id: Project identifier
+            activity: Optional activity filter
+
+        Returns:
+            DataFrame with budget history
+        """
+        # Filter by project
+        filtered = [b for b in self.budget_history if b['ProjectID'] == project_id]
+
+        # Filter by activity if specified
+        if activity:
+            filtered = [b for b in filtered if b['Activity'] == activity]
+
+        if not filtered:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(filtered)
+
+        # Sort by ValidFrom descending, then CreatedAt descending
+        df['ValidFrom_dt'] = pd.to_datetime(df['ValidFrom'])
+        df['CreatedAt_dt'] = pd.to_datetime(df['CreatedAt'])
+        df = df.sort_values(['ValidFrom_dt', 'CreatedAt_dt'], ascending=[False, False])
+        df = df.drop(['ValidFrom_dt', 'CreatedAt_dt'], axis=1)
+
+        return df
+
+    def get_budget_at_date(
+        self,
+        project_id: str,
+        activity: str,
+        target_date: str
+    ) -> float:
+        """
+        Calculate total budget at a specific date (test mode)
+
+        Args:
+            project_id: Project identifier
+            activity: Activity name
+            target_date: Target date (ISO format)
+
+        Returns:
+            Total budget hours valid at target date
+        """
+        target_dt = datetime.fromisoformat(target_date)
+
+        # Filter entries
+        filtered = [
+            b for b in self.budget_history
+            if b['ProjectID'] == project_id
+            and b['Activity'] == activity
+            and datetime.fromisoformat(b['ValidFrom']) <= target_dt
+        ]
+
+        # Sum hours
+        total = sum(b['Hours'] for b in filtered)
+        return total
+
+    def get_all_budgets_at_date(
+        self,
+        projects: list,
+        target_date: str
+    ) -> Dict[str, Dict[str, float]]:
+        """
+        Calculate all budgets for multiple projects at a specific date (test mode)
+
+        Args:
+            projects: List of project identifiers
+            target_date: Target date (ISO format)
+
+        Returns:
+            Dictionary mapping project -> activity -> budget hours
+        """
+        target_dt = datetime.fromisoformat(target_date)
+        budgets = {}
+
+        for entry in self.budget_history:
+            if entry['ProjectID'] not in projects:
+                continue
+
+            valid_from_dt = datetime.fromisoformat(entry['ValidFrom'])
+            if valid_from_dt > target_dt:
+                continue
+
+            project_id = entry['ProjectID']
+            activity = entry['Activity']
+            hours = entry['Hours']
+
+            if project_id not in budgets:
+                budgets[project_id] = {}
+
+            if activity not in budgets[project_id]:
+                budgets[project_id][activity] = 0.0
+
+            budgets[project_id][activity] += hours
+
+        return budgets
+
+    def get_all_activities_for_project(self, project_id: str) -> list:
+        """
+        Get all unique activities for a project (test mode)
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            List of activity names
+        """
+        activities = set()
+
+        for entry in self.budget_history:
+            if entry['ProjectID'] == project_id:
+                activities.add(entry['Activity'])
+
+        return sorted(list(activities))
 
 # Global test database instance
 test_db_config = TestDatabaseConfig()

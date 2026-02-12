@@ -340,26 +340,26 @@ class DatabaseConfig:
     def validate_project_exists(self, project_id: str) -> bool:
         """
         Validiert ob ein Projektkürzel in der ZV-Tabelle existiert.
-        
+
         Args:
             project_id: Projektkürzel (z.B. 'P24SAN04')
-            
+
         Returns:
             True wenn Projekt existiert, False sonst
         """
         if not PYODBC_AVAILABLE:
             logging.warning("pyodbc not available - skipping validation")
             return True
-        
+
         if not project_id or not project_id.strip():
             return False
-        
+
         query = """
         SELECT COUNT(*) as count
         FROM ZV
         WHERE [ProjektNr] = ?
         """
-        
+
         try:
             with pyodbc.connect(self.connection_string, timeout=5) as conn:
                 cursor = conn.cursor()
@@ -369,6 +369,244 @@ class DatabaseConfig:
         except Exception as e:
             logging.error(f"Project validation failed for '{project_id}': {e}")
             return False
+
+    # ============================================
+    # Budget History Management
+    # ============================================
+
+    def execute_non_query(self, query: str, params: Optional[tuple] = None) -> bool:
+        """
+        Execute non-query SQL command (INSERT, UPDATE, DELETE)
+
+        Args:
+            query: SQL command to execute
+            params: Optional tuple of parameters
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not PYODBC_AVAILABLE:
+            logging.warning("pyodbc not available - cannot execute command")
+            return False
+
+        try:
+            with pyodbc.connect(self.connection_string) as conn:
+                cursor = conn.cursor()
+                if params:
+                    cursor.execute(query, params)
+                else:
+                    cursor.execute(query)
+                conn.commit()
+                return True
+        except Exception as e:
+            logging.error(f"Command execution failed: {e}")
+            st.error(f"Database command failed: {str(e)}")
+            return False
+
+    def save_budget_entry(
+        self,
+        project_id: str,
+        activity: str,
+        hours: float,
+        change_type: str,
+        valid_from: str,  # ISO format date string (YYYY-MM-DD)
+        reason: str,
+        reference: Optional[str],
+        created_by: str
+    ) -> bool:
+        """
+        Save a new budget entry to the BudgetHistory table
+
+        Args:
+            project_id: Project identifier (e.g., 'P24ABC01')
+            activity: Activity name (e.g., 'Implementierung')
+            hours: Number of hours for this budget entry
+            change_type: Type of change ('initial', 'extension', 'correction', 'reduction')
+            valid_from: Date from which this budget is valid (ISO format)
+            reason: Explanation for this budget entry
+            reference: Optional reference (contract number, change request, etc.)
+            created_by: User email who created this entry
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not PYODBC_AVAILABLE:
+            logging.warning("pyodbc not available - cannot save budget entry")
+            return False
+
+        query = """
+        INSERT INTO BudgetHistory (
+            ProjectID, Activity, Hours, ChangeType, ValidFrom,
+            Reason, Reference, CreatedBy
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        params = (
+            project_id,
+            activity,
+            hours,
+            change_type,
+            valid_from,
+            reason,
+            reference if reference else None,
+            created_by
+        )
+
+        return self.execute_non_query(query, params)
+
+    def get_budget_history(
+        self,
+        project_id: str,
+        activity: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Get complete budget history for a project/activity
+
+        Args:
+            project_id: Project identifier
+            activity: Optional activity filter
+
+        Returns:
+            DataFrame with budget history entries
+        """
+        if activity:
+            query = """
+            SELECT
+                ID,
+                ProjectID,
+                Activity,
+                Hours,
+                ChangeType,
+                ValidFrom,
+                Reason,
+                Reference,
+                CreatedBy,
+                CreatedAt
+            FROM BudgetHistory
+            WHERE ProjectID = ? AND Activity = ?
+            ORDER BY ValidFrom DESC, CreatedAt DESC
+            """
+            params = (project_id, activity)
+        else:
+            query = """
+            SELECT
+                ID,
+                ProjectID,
+                Activity,
+                Hours,
+                ChangeType,
+                ValidFrom,
+                Reason,
+                Reference,
+                CreatedBy,
+                CreatedAt
+            FROM BudgetHistory
+            WHERE ProjectID = ?
+            ORDER BY Activity, ValidFrom DESC, CreatedAt DESC
+            """
+            params = (project_id,)
+
+        return self.execute_query(query, params)
+
+    def get_budget_at_date(
+        self,
+        project_id: str,
+        activity: str,
+        target_date: str  # ISO format date string (YYYY-MM-DD)
+    ) -> float:
+        """
+        Calculate total budget for a project/activity at a specific date
+
+        Args:
+            project_id: Project identifier
+            activity: Activity name
+            target_date: Date for which to calculate budget (ISO format)
+
+        Returns:
+            Total budget hours valid at the target date
+        """
+        query = """
+        SELECT COALESCE(SUM(Hours), 0) as TotalHours
+        FROM BudgetHistory
+        WHERE ProjectID = ?
+          AND Activity = ?
+          AND ValidFrom <= ?
+        """
+
+        result = self.execute_query(query, (project_id, activity, target_date))
+
+        if not result.empty and 'TotalHours' in result.columns:
+            return float(result['TotalHours'].iloc[0])
+        return 0.0
+
+    def get_all_budgets_at_date(
+        self,
+        projects: list,
+        target_date: str  # ISO format date string (YYYY-MM-DD)
+    ) -> Dict[str, Dict[str, float]]:
+        """
+        Calculate all budgets for multiple projects at a specific date
+
+        Args:
+            projects: List of project identifiers
+            target_date: Date for which to calculate budgets (ISO format)
+
+        Returns:
+            Dictionary mapping project -> activity -> budget hours
+            Example: {'P24ABC01': {'Implementierung': 150.0, 'Testing': 50.0}}
+        """
+        if not projects:
+            return {}
+
+        placeholders = ','.join(['?' for _ in projects])
+        query = f"""
+        SELECT
+            ProjectID,
+            Activity,
+            SUM(Hours) as TotalHours
+        FROM BudgetHistory
+        WHERE ProjectID IN ({placeholders})
+          AND ValidFrom <= ?
+        GROUP BY ProjectID, Activity
+        """
+
+        params = tuple(projects) + (target_date,)
+        result = self.execute_query(query, params)
+
+        budgets = {}
+        for _, row in result.iterrows():
+            project_id = row['ProjectID']
+            activity = row['Activity']
+            hours = float(row['TotalHours'])
+
+            if project_id not in budgets:
+                budgets[project_id] = {}
+            budgets[project_id][activity] = hours
+
+        return budgets
+
+    def get_all_activities_for_project(self, project_id: str) -> list:
+        """
+        Get all unique activities that have budget entries for a project
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            List of activity names
+        """
+        query = """
+        SELECT DISTINCT Activity
+        FROM BudgetHistory
+        WHERE ProjectID = ?
+        ORDER BY Activity
+        """
+
+        result = self.execute_query(query, (project_id,))
+
+        if not result.empty and 'Activity' in result.columns:
+            return result['Activity'].tolist()
+        return []
 
 # Global database instance
 db_config = DatabaseConfig()

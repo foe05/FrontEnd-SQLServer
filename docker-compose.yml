@@ -28,10 +28,13 @@ services:
     volumes:
       # Mount configuration files
       - ./config/users.json:/app/config/users.json:ro
-      
+
+      # Mount data directory for SQLite budget database (persistent)
+      - ./data:/app/data
+
       # Mount cache directory for persistent target hours (use named volume for permissions)
       - cache-data:/app/cache
-      
+
       # Mount logs directory (use named volume for permissions)
       - logs-data:/app/logs
     
