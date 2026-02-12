@@ -149,11 +149,16 @@ class DatabaseConfig:
         """Get available projects for user"""
         if not user_projects:
             return pd.DataFrame()
-            
+
+        # Filter out None values from user_projects
+        user_projects = [p for p in user_projects if p is not None]
+        if not user_projects:
+            return pd.DataFrame()
+
         placeholders = ','.join(['?' for _ in user_projects])
         query = f"""
         SELECT DISTINCT [Projekt], [ProjektNr], [Kundenname]
-        FROM ZV 
+        FROM ZV
         WHERE [ProjektNr] IN ({placeholders})
         ORDER BY [Projekt]
         """
@@ -163,10 +168,15 @@ class DatabaseConfig:
         """Get time entries for specified projects"""
         if not projects:
             return pd.DataFrame()
-            
+
+        # Filter out None values from projects
+        projects = [p for p in projects if p is not None]
+        if not projects:
+            return pd.DataFrame()
+
         where_conditions = []
         params = []
-        
+
         # Project filter (using ProjektNr)
         placeholders = ','.join(['?' for _ in projects])
         where_conditions.append(f"[ProjektNr] IN ({placeholders})")
@@ -194,10 +204,12 @@ class DatabaseConfig:
                         where_conditions.append("[Datum] <= ?")
                         params.append(end_date)
         
-        where_clause = " AND ".join(where_conditions)
-        
+        # Filter out None values from where_conditions to prevent join errors
+        where_conditions = [c for c in where_conditions if c is not None]
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+
         query = f"""
-        SELECT 
+        SELECT
             [Name],
             [Zeit],
             [Projekt],
@@ -219,11 +231,16 @@ class DatabaseConfig:
         WHERE {where_clause}
         ORDER BY [Projekt], [Verwendung], [Datum] DESC
         """
-        
+
         return self.execute_query(query, tuple(params))
     
     def get_aggregated_data(self, projects: list, filters: Dict[str, Any] = None, hours_column: str = "FaktStd") -> pd.DataFrame:
         """Get aggregated time data by activity (Verwendung)"""
+        if not projects:
+            return pd.DataFrame()
+
+        # Filter out None values from projects
+        projects = [p for p in projects if p is not None]
         if not projects:
             return pd.DataFrame()
 
@@ -254,8 +271,10 @@ class DatabaseConfig:
                         where_conditions.append("[Datum] <= ?")
                         params.append(end_date)
 
-        where_clause = " AND ".join(where_conditions)
-        
+        # Filter out None values from where_conditions to prevent join errors
+        where_conditions = [c for c in where_conditions if c is not None]
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+
         query = f"""
         SELECT
             [Projekt],
@@ -272,7 +291,7 @@ class DatabaseConfig:
         GROUP BY [Projekt], [ProjektNr], [Kundenname], [Name], [Verwendung]
         ORDER BY [Projekt], SUM(CAST([{hours_column}] as FLOAT)) DESC
         """
-        
+
         return self.execute_query(query, tuple(params))
 
     @st.cache_data(ttl=3600)  # Cache für 1 Stunde
@@ -293,6 +312,11 @@ class DatabaseConfig:
             logging.warning("pyodbc not available - returning empty DataFrame")
             return pd.DataFrame()
 
+        if not projects:
+            return pd.DataFrame()
+
+        # Filter out None values from projects
+        projects = [p for p in projects if p is not None]
         if not projects:
             return pd.DataFrame()
 
@@ -322,7 +346,9 @@ class DatabaseConfig:
                         where_conditions.append("[Datum] <= ?")
                         params.append(end_date)
 
-        where_clause = " AND ".join(where_conditions)
+        # Filter out None values from where_conditions to prevent join errors
+        where_conditions = [c for c in where_conditions if c is not None]
+        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
 
         query = f"""
         SELECT
