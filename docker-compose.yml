@@ -29,8 +29,8 @@ services:
       # Mount configuration files
       - ./config/users.json:/app/config/users.json:ro
 
-      # Mount data directory for SQLite budget database (persistent)
-      - ./data:/app/data
+      # Mount data directory for SQLite budget database (use named volume for permissions)
+      - data-volume:/app/data
 
       # Mount cache directory for persistent target hours (use named volume for permissions)
       - cache-data:/app/cache
@@ -80,5 +80,6 @@ networks:
 volumes:
   # Uncomment if using Redis
   # redis-data:
+  data-volume:
   cache-data:
   logs-data:

@@ -66,8 +66,8 @@ WORKDIR /app
 COPY --chown=streamlit:streamlit . /app/
 
 # Create directories with proper permissions (as root before switching user)
-RUN mkdir -p /app/cache /app/logs /home/streamlit/.streamlit \
-    && chown -R streamlit:streamlit /app/cache /app/logs /home/streamlit
+RUN mkdir -p /app/cache /app/logs /app/data /home/streamlit/.streamlit \
+    && chown -R streamlit:streamlit /app/cache /app/logs /app/data /home/streamlit
 
 # Create Streamlit configuration (as root)
 RUN echo '[server]\n\
