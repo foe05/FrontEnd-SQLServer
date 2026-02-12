@@ -780,7 +780,10 @@ class TimeTrackingApp:
         # Get user permissions and projects
         user_permissions = auth_manager.get_user_permissions(current_user['email'])
         user_projects = user_permissions.get('projects', [])
-        
+
+        # Filter out None values from user projects
+        user_projects = [p for p in user_projects if p is not None]
+
         if not user_projects:
             st.error("Keine Projekte für diesen Benutzer konfiguriert.")
             return
@@ -805,7 +808,10 @@ class TimeTrackingApp:
             
             # Project selection
             selected_projects = filter_manager.project_filter(user_projects)
-            
+
+            # Filter out None values from selected projects
+            selected_projects = [p for p in selected_projects if p is not None]
+
             if not selected_projects:
                 st.warning("Bitte wählen Sie mindestens ein Projekt aus")
                 return
