@@ -55,7 +55,9 @@ class ExcelExporter:
         # Export info
         ws['A3'] = f"Export erstellt: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
         ws['A4'] = f"Benutzer: {metadata.get('user', 'Unbekannt')}"
-        ws['A5'] = f"Projekte: {', '.join(metadata.get('projects', []))}"
+        # Filter None values before join
+        projects = [str(p) for p in metadata.get('projects', []) if p is not None]
+        ws['A5'] = f"Projekte: {', '.join(projects) if projects else 'Keine'}"
         ws['A6'] = f"Zeitraum: {metadata.get('period', 'Alle')}"
         
         # Styling

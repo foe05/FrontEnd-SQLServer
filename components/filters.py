@@ -248,26 +248,32 @@ class FilterManager:
             active_filters.append(date_text)
 
         if 'selected_activities' in filters and filters['selected_activities']:
-            if len(filters['selected_activities']) <= 3:
-                activity_text = f"Tätigkeiten: {', '.join(filters['selected_activities'])}"
+            # Filter None values before join
+            activities = [str(a) for a in filters['selected_activities'] if a is not None]
+            if len(activities) <= 3 and activities:
+                activity_text = f"Tätigkeiten: {', '.join(activities)}"
             else:
-                activity_text = f"Tätigkeiten: {len(filters['selected_activities'])} ausgewählt"
+                activity_text = f"Tätigkeiten: {len(activities)} ausgewählt"
             active_filters.append(activity_text)
             filter_details.append((activity_text, 'activities', None))
 
         if 'selected_customers' in filters and filters['selected_customers']:
-            if len(filters['selected_customers']) <= 3:
-                customer_text = f"Kunden: {', '.join(filters['selected_customers'])}"
+            # Filter None values before join
+            customers = [str(c) for c in filters['selected_customers'] if c is not None]
+            if len(customers) <= 3 and customers:
+                customer_text = f"Kunden: {', '.join(customers)}"
             else:
-                customer_text = f"Kunden: {len(filters['selected_customers'])} ausgewählt"
+                customer_text = f"Kunden: {len(customers)} ausgewählt"
             active_filters.append(customer_text)
             filter_details.append((customer_text, 'customers', None))
 
         if 'selected_employees' in filters and filters['selected_employees']:
-            if len(filters['selected_employees']) <= 3:
-                employee_text = f"Mitarbeiter: {', '.join(filters['selected_employees'])}"
+            # Filter None values before join
+            employees = [str(e) for e in filters['selected_employees'] if e is not None]
+            if len(employees) <= 3 and employees:
+                employee_text = f"Mitarbeiter: {', '.join(employees)}"
             else:
-                employee_text = f"Mitarbeiter: {len(filters['selected_employees'])} ausgewählt"
+                employee_text = f"Mitarbeiter: {len(employees)} ausgewählt"
             active_filters.append(employee_text)
             filter_details.append((employee_text, 'employees', None))
 

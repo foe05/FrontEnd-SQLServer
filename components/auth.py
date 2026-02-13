@@ -236,8 +236,11 @@ class AuthManager:
         with st.expander("Verfügbare Test-Benutzer"):
             for email, config in self.users_config.get("users", {}).items():
                 st.write(f"**{email}**")
-                st.write(f"- Projekte: {', '.join(config.get('projects', []))}")
-                st.write(f"- Berechtigungen: {', '.join(config.get('permissions', []))}")
+                # Filter None values before join
+                projects = [str(p) for p in config.get('projects', []) if p is not None]
+                permissions = [str(p) for p in config.get('permissions', []) if p is not None]
+                st.write(f"- Projekte: {', '.join(projects) if projects else 'Keine'}")
+                st.write(f"- Berechtigungen: {', '.join(permissions) if permissions else 'Keine'}")
                 st.write("---")
         
         return None
@@ -319,11 +322,14 @@ class AuthManager:
             
             **Verfügbare Test-Benutzer:**
             """)
-            
+
             for email, config in self.users_config.get("users", {}).items():
                 st.write(f"**{email}**")
-                st.write(f"- Projekte: {', '.join(config.get('projects', []))}")
-                st.write(f"- Berechtigungen: {', '.join(config.get('permissions', []))}")
+                # Filter None values before join
+                projects = [str(p) for p in config.get('projects', []) if p is not None]
+                permissions = [str(p) for p in config.get('permissions', []) if p is not None]
+                st.write(f"- Projekte: {', '.join(projects) if projects else 'Keine'}")
+                st.write(f"- Berechtigungen: {', '.join(permissions) if permissions else 'Keine'}")
                 st.write("---")
         
         return None

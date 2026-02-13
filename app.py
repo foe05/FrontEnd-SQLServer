@@ -795,17 +795,14 @@ class TimeTrackingApp:
             </div>
             """, unsafe_allow_html=True)
 
-            # Show user info UNDER Main Menu
-            auth_manager.show_user_info(in_sidebar=False)
-
             st.markdown("""
-            <div style="margin-top: 2rem; margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 1.5rem;">
                 <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">
                     🔍 Filters
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            
+
             # Project selection
             selected_projects = filter_manager.project_filter(user_projects)
 
@@ -815,7 +812,7 @@ class TimeTrackingApp:
             if not selected_projects:
                 st.warning("Bitte wählen Sie mindestens ein Projekt aus")
                 return
-            
+
             # Date filters
             date_filters = filter_manager.date_filter()
 
@@ -832,14 +829,21 @@ class TimeTrackingApp:
 
             # Additional filters
             search_term = filter_manager.search_filter()
-            
+
             # Hours column selector
             hours_column = filter_manager.hours_column_selector()
-            
+
             # Reset filters button
             if st.button("🔄 Filter zurücksetzen"):
                 filter_manager.reset_filters()
-            
+
+            # Show user info AFTER Hours column selector and BEFORE Admin Tools
+            st.markdown("""
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+            </div>
+            """, unsafe_allow_html=True)
+            auth_manager.show_user_info(in_sidebar=False)
+
             # Admin tools with modern design
             if auth_manager.has_permission(current_user['email'], 'admin'):
                 st.markdown("""
@@ -954,11 +958,16 @@ class TimeTrackingApp:
             # Tab 1: Übersicht (Executive Dashboard Style)
             with tab1:
                 # Header with project badge
+                # Filter None values for display
+                display_projects = [str(p) for p in selected_projects[:2] if p is not None]
+                projects_text = ', '.join(display_projects) if display_projects else 'Keine Projekte'
+                more_indicator = '...' if len(selected_projects) > 2 else ''
+
                 st.markdown(f"""
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
                     <div class="project-badge">
                         <span class="material-icons" style="font-size: 1rem; color: #135bec;">folder_open</span>
-                        {', '.join(selected_projects[:2])}{'...' if len(selected_projects) > 2 else ''}
+                        {projects_text}{more_indicator}
                     </div>
                     <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Project Controlling Executive Dashboard</h1>
                 </div>
