@@ -760,10 +760,7 @@ class TimeTrackingApp:
         current_user = auth_manager.login_form()
         if not current_user:
             return
-        
-        # Show user info in sidebar
-        auth_manager.show_user_info()
-        
+
         # Main application header with modern design
         st.markdown("""
         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0;">
@@ -776,7 +773,7 @@ class TimeTrackingApp:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
+
         # Get user permissions and projects
         user_permissions = auth_manager.get_user_permissions(current_user['email'])
         user_projects = user_permissions.get('projects', [])
@@ -787,7 +784,7 @@ class TimeTrackingApp:
         if not user_projects:
             st.error("Keine Projekte für diesen Benutzer konfiguriert.")
             return
-        
+
         # Sidebar filters with modern design
         with st.sidebar:
             st.markdown("""
@@ -798,8 +795,11 @@ class TimeTrackingApp:
             </div>
             """, unsafe_allow_html=True)
 
+            # Show user info UNDER Main Menu
+            auth_manager.show_user_info(in_sidebar=False)
+
             st.markdown("""
-            <div style="margin-bottom: 1.5rem;">
+            <div style="margin-top: 2rem; margin-bottom: 1.5rem;">
                 <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;">
                     🔍 Filters
                 </div>

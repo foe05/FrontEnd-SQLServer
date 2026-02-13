@@ -24,8 +24,8 @@ class FilterManager:
         for proj in available_projects:
             key = f"proj_{proj}"
             if key not in st.session_state:
-                # Default: first project selected
-                st.session_state[key] = (proj == available_projects[0])
+                # Default: NO project selected initially
+                st.session_state[key] = False
 
         # Select all / deselect all toggle
         col1, col2 = st.columns(2)
@@ -50,57 +50,21 @@ class FilterManager:
         return selected
     
     def date_filter(self) -> Dict[str, Any]:
-        """Date range and period filters"""
-        # Date range picker
-        default_start_date = date(self.current_year, 1, 1)
+        """Date range filter with default of today minus 2 years"""
+        from dateutil.relativedelta import relativedelta
+
+        # Default: Today minus 2 years to today
         default_end_date = date.today()
+        default_start_date = default_end_date - relativedelta(years=2)
 
         date_range = st.date_input(
             "📅 Datumsbereich",
             value=(default_start_date, default_end_date),
-            help="Wählen Sie einen Start- und Enddatum für die Auswertung"
+            help="Wählen Sie einen Start- und Enddatum für die Auswertung (Default: Heute minus 2 Jahre)"
         )
 
-        col1, col2, col3 = st.columns(3)
-
-        # Handle reset flags
-        month_index = 0
-        quarter_index = 0
-
-        if 'reset_month_filter' in st.session_state and st.session_state.reset_month_filter:
-            month_index = 0
-            del st.session_state.reset_month_filter
-
-        if 'reset_quarter_filter' in st.session_state and st.session_state.reset_quarter_filter:
-            quarter_index = 0
-            del st.session_state.reset_quarter_filter
-
-        with col1:
-            year = st.selectbox(
-                "📅 Jahr",
-                options=list(range(self.current_year - 2, self.current_year + 1)),
-                index=2,  # Current year
-                help="Wählen Sie das Jahr für die Auswertung"
-            )
-
-        with col2:
-            month = st.selectbox(
-                "📅 Monat",
-                options=["Alle"] + [f"{i:02d}" for i in range(1, 13)],
-                index=month_index,
-                help="Wählen Sie einen spezifischen Monat oder 'Alle'"
-            )
-
-        with col3:
-            quarter = st.selectbox(
-                "📅 Quartal",
-                options=["Alle", "Q1", "Q2", "Q3", "Q4"],
-                index=quarter_index,
-                help="Wählen Sie ein Quartal"
-            )
-
         # Convert filters to database format
-        filters = {"year": year}
+        filters = {}
 
         # Add date range filter as tuple for database queries
         if isinstance(date_range, tuple) and len(date_range) == 2:
@@ -112,19 +76,6 @@ class FilterManager:
             filters["date_range"] = (date_range, date_range)
             filters["start_date"] = date_range
             filters["end_date"] = date_range
-
-        if month != "Alle":
-            filters["month"] = int(month)
-
-        if quarter != "Alle":
-            quarter_months = {
-                "Q1": [1, 2, 3],
-                "Q2": [4, 5, 6],
-                "Q3": [7, 8, 9],
-                "Q4": [10, 11, 12]
-            }
-            if month == "Alle":  # Only apply quarter if no specific month selected
-                filters["quarter_months"] = quarter_months[quarter]
 
         return filters
     
@@ -287,36 +238,14 @@ class FilterManager:
         active_filters = []
         filter_details = []  # List of tuples: (display_text, filter_type, filter_key)
 
-        if 'year' in filters:
-            year_text = f"Jahr: {filters['year']}"
-            active_filters.append(year_text)
-
         # Display date range if selected
         if 'start_date' in filters and 'end_date' in filters:
             start = filters['start_date']
             end = filters['end_date']
-            start_str = start.strftime('%Y-%m-%d') if hasattr(start, 'strftime') else str(start)
-            end_str = end.strftime('%Y-%m-%d') if hasattr(end, 'strftime') else str(end)
-            date_text = f"Zeitraum: {start_str} bis {end_str}"
+            start_str = start.strftime('%d.%m.%Y') if hasattr(start, 'strftime') else str(start)
+            end_str = end.strftime('%d.%m.%Y') if hasattr(end, 'strftime') else str(end)
+            date_text = f"Zeitraum: {start_str} - {end_str}"
             active_filters.append(date_text)
-
-        if 'month' in filters:
-            month_text = f"Monat: {filters['month']:02d}"
-            active_filters.append(month_text)
-            filter_details.append((month_text, 'month', None))
-
-        if 'quarter_months' in filters:
-            quarters = {
-                str([1,2,3]): "Q1",
-                str([4,5,6]): "Q2",
-                str([7,8,9]): "Q3",
-                str([10,11,12]): "Q4"
-            }
-            quarter_key = str(filters['quarter_months'])
-            if quarter_key in quarters:
-                quarter_text = f"Quartal: {quarters[quarter_key]}"
-                active_filters.append(quarter_text)
-                filter_details.append((quarter_text, 'quarter', None))
 
         if 'selected_activities' in filters and filters['selected_activities']:
             if len(filters['selected_activities']) <= 3:
@@ -375,13 +304,7 @@ class FilterManager:
 
     def _clear_individual_filter(self, filter_type: str):
         """Clear a specific filter from session state"""
-        if filter_type == 'month':
-            # Set flag to reset month filter to "Alle"
-            st.session_state['reset_month_filter'] = True
-        elif filter_type == 'quarter':
-            # Set flag to reset quarter filter to "Alle"
-            st.session_state['reset_quarter_filter'] = True
-        elif filter_type == 'activities':
+        if filter_type == 'activities':
             # Reset activities to "Alle"
             st.session_state['selected_activities'] = ["Alle"]
         elif filter_type == 'search':

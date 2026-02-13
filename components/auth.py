@@ -353,43 +353,55 @@ class AuthManager:
 
         st.rerun()
     
-    def show_user_info(self):
-        """Show current user information in sidebar"""
+    def show_user_info(self, in_sidebar: bool = True):
+        """
+        Show current user information
+
+        Args:
+            in_sidebar: If True, wraps content in sidebar context. If False, renders directly (caller manages context).
+        """
         if 'user' not in st.session_state or not st.session_state.user:
             return
-            
+
         user = st.session_state.user
         user_perms = self.get_user_permissions(user['email'])
-        
-        with st.sidebar:
+
+        def render_user_info():
+            """Renders the user info content"""
             # Show TEST MODE indicator if active
             if self.test_mode or user.get('test_mode', False):
                 st.success("🧪 TEST-MODUS")
-            
+
             st.markdown("### 👤 Benutzer")
             st.write(f"**{user['name']}**")
             st.write(f"*{user['email']}*")
-            
+
             st.markdown("**Berechtigungen:**")
             for perm in user_perms['permissions']:
                 st.write(f"✓ {perm}")
-            
+
             st.markdown("**Projekte:**")
             for project in user_perms['projects']:
                 st.write(f"📁 {project}")
-            
+
             # Abmelden Button (funktioniert in allen Modi)
-            if st.button("🚪 Abmelden", type="secondary"):
+            if st.button("🚪 Abmelden", type="secondary", key="logout_btn"):
                 self.logout()
-                
+
             # Test-Mode specific options
             if self.test_mode or user.get('test_mode', False):
                 st.markdown("---")
                 st.markdown("**🧪 Test-Optionen:**")
-                if st.button("🔄 Benutzer wechseln", type="secondary"):
+                if st.button("🔄 Benutzer wechseln", type="secondary", key="switch_user_btn"):
                     # Force user selection on next render and suppress auto-login
                     st.session_state["force_test_user_selection"] = True
                     self.logout()
+
+        if in_sidebar:
+            with st.sidebar:
+                render_user_info()
+        else:
+            render_user_info()
 
 # Global auth manager instance
 auth_manager = AuthManager()

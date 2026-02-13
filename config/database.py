@@ -150,9 +150,10 @@ class DatabaseConfig:
         if not user_projects:
             return pd.DataFrame()
 
-        # Filter out None values from user_projects
-        user_projects = [p for p in user_projects if p is not None]
+        # Filter out None, empty strings, and whitespace-only values from user_projects
+        user_projects = [str(p).strip() for p in user_projects if p is not None and str(p).strip()]
         if not user_projects:
+            logging.warning("get_projects: No valid projects after filtering None values")
             return pd.DataFrame()
 
         placeholders = ','.join(['?' for _ in user_projects])
@@ -169,9 +170,10 @@ class DatabaseConfig:
         if not projects:
             return pd.DataFrame()
 
-        # Filter out None values from projects
-        projects = [p for p in projects if p is not None]
+        # Filter out None, empty strings, and whitespace-only values from projects
+        projects = [str(p).strip() for p in projects if p is not None and str(p).strip()]
         if not projects:
+            logging.warning("get_time_entries: No valid projects after filtering None values")
             return pd.DataFrame()
 
         where_conditions = []
@@ -181,7 +183,7 @@ class DatabaseConfig:
         placeholders = ','.join(['?' for _ in projects])
         where_conditions.append(f"[ProjektNr] IN ({placeholders})")
         params.extend(projects)
-        
+
         # Additional filters
         if filters:
             if filters.get('year'):
@@ -203,10 +205,13 @@ class DatabaseConfig:
                     if end_date:
                         where_conditions.append("[Datum] <= ?")
                         params.append(end_date)
-        
-        # Filter out None values from where_conditions to prevent join errors
-        where_conditions = [c for c in where_conditions if c is not None]
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+
+        # Robust filter: Remove None, empty strings, and ensure all items are strings
+        where_conditions = [str(c) for c in where_conditions if c is not None and str(c).strip()]
+        if not where_conditions:
+            where_conditions = ["1=1"]
+
+        where_clause = " AND ".join(where_conditions)
 
         query = f"""
         SELECT
@@ -239,9 +244,10 @@ class DatabaseConfig:
         if not projects:
             return pd.DataFrame()
 
-        # Filter out None values from projects
-        projects = [p for p in projects if p is not None]
+        # Filter out None, empty strings, and whitespace-only values from projects
+        projects = [str(p).strip() for p in projects if p is not None and str(p).strip()]
         if not projects:
+            logging.warning("get_aggregated_data: No valid projects after filtering None values")
             return pd.DataFrame()
 
         where_conditions = []
@@ -271,9 +277,12 @@ class DatabaseConfig:
                         where_conditions.append("[Datum] <= ?")
                         params.append(end_date)
 
-        # Filter out None values from where_conditions to prevent join errors
-        where_conditions = [c for c in where_conditions if c is not None]
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        # Robust filter: Remove None, empty strings, and ensure all items are strings
+        where_conditions = [str(c) for c in where_conditions if c is not None and str(c).strip()]
+        if not where_conditions:
+            where_conditions = ["1=1"]
+
+        where_clause = " AND ".join(where_conditions)
 
         query = f"""
         SELECT
@@ -315,9 +324,10 @@ class DatabaseConfig:
         if not projects:
             return pd.DataFrame()
 
-        # Filter out None values from projects
-        projects = [p for p in projects if p is not None]
+        # Filter out None, empty strings, and whitespace-only values from projects
+        projects = [str(p).strip() for p in projects if p is not None and str(p).strip()]
         if not projects:
+            logging.warning("get_project_bookings: No valid projects after filtering None values")
             return pd.DataFrame()
 
         where_conditions = []
@@ -346,9 +356,12 @@ class DatabaseConfig:
                         where_conditions.append("[Datum] <= ?")
                         params.append(end_date)
 
-        # Filter out None values from where_conditions to prevent join errors
-        where_conditions = [c for c in where_conditions if c is not None]
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        # Robust filter: Remove None, empty strings, and ensure all items are strings
+        where_conditions = [str(c) for c in where_conditions if c is not None and str(c).strip()]
+        if not where_conditions:
+            where_conditions = ["1=1"]
+
+        where_clause = " AND ".join(where_conditions)
 
         query = f"""
         SELECT
@@ -582,6 +595,12 @@ class DatabaseConfig:
             Example: {'P24ABC01': {'Implementierung': 150.0, 'Testing': 50.0}}
         """
         if not projects:
+            return {}
+
+        # Filter out None, empty strings, and whitespace-only values from projects
+        projects = [str(p).strip() for p in projects if p is not None and str(p).strip()]
+        if not projects:
+            logging.warning("get_all_budgets_at_date: No valid projects after filtering None values")
             return {}
 
         placeholders = ','.join(['?' for _ in projects])
