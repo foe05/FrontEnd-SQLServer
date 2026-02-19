@@ -50,7 +50,7 @@ class ForecastEngine:
         # Filtere auf letzte 4 Sprints
         recent_bookings = self.bookings_df[self.bookings_df['sprint_number'] < ANALYSIS_SPRINTS].copy()
         
-        if len(recent_bookings) == 0:
+        if recent_bookings is None or len(recent_bookings) == 0:
             return pd.DataFrame()
         
         # Aggregiere nach Sprint
@@ -75,7 +75,7 @@ class ForecastEngine:
         Returns:
             Durchschnittliche Stunden pro Sprint
         """
-        if len(self.sprint_data) == 0:
+        if self.sprint_data is None or len(self.sprint_data) == 0:
             return 0.0
         
         # Gewichteter Durchschnitt
@@ -104,7 +104,7 @@ class ForecastEngine:
         base_hours = manual_hours_per_sprint if manual_hours_per_sprint is not None else auto_hours_per_sprint
         
         # Berechne Varianz aus historischen Daten
-        if len(self.sprint_data) >= 2:
+        if self.sprint_data is not None and len(self.sprint_data) >= 2:
             sprint_variance = self.sprint_data['hours'].std()
             confidence_factor = sprint_variance / base_hours if base_hours > 0 else 0.2
         else:
@@ -171,7 +171,7 @@ class ForecastEngine:
         Returns:
             Dict mit Trend-Information
         """
-        if len(self.sprint_data) < 2:
+        if self.sprint_data is None or len(self.sprint_data) < 2:
             return {'trend': 'insufficient_data', 'direction': 0, 'slope': 0}
         
         # Linear Regression über Sprint-Nummern (einfache Implementierung ohne sklearn)
