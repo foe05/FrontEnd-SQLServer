@@ -589,7 +589,7 @@ class TimeTrackingApp:
             show_table_skeleton(num_rows=10, num_columns=8)
             return pd.DataFrame()
 
-        if dashboard_df.empty:
+        if dashboard_df is None or dashboard_df.empty:
             st.markdown("""
             <div class="kpi-card" style="background: #fef3c7; border-color: #fbbf24;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -899,9 +899,9 @@ class TimeTrackingApp:
                 filtered_data = filter_manager.apply_filters(raw_data, filter_params)
 
                 # Calculate target_date from date filters for budget calculation
-                if 'date_range' in date_filters and date_filters['date_range']:
+                if 'date_range' in date_filters and date_filters.get('date_range') is not None:
                     date_range = date_filters['date_range']
-                    if len(date_range) == 2 and date_range[1]:
+                    if isinstance(date_range, (list, tuple)) and len(date_range) == 2 and date_range[1]:
                         target_date_for_budget = date_range[1].isoformat()
                     else:
                         target_date_for_budget = datetime.now().date().isoformat()
@@ -924,13 +924,13 @@ class TimeTrackingApp:
                 'selected_customers': selected_customers,
                 'selected_employees': selected_employees,
                 'search_term': search_term
-            }, record_count=len(filtered_data))
+            }, record_count=len(filtered_data) if filtered_data is not None else 0)
 
             # Calculate target_date from date filters
             # Use the end date from the filter range for budget calculation
-            if 'date_range' in date_filters and date_filters['date_range']:
+            if 'date_range' in date_filters and date_filters.get('date_range') is not None:
                 date_range = date_filters['date_range']
-                if len(date_range) == 2 and date_range[1]:
+                if isinstance(date_range, (list, tuple)) and len(date_range) == 2 and date_range[1]:
                     target_date = date_range[1].isoformat()
                 else:
                     target_date = datetime.now().date().isoformat()
@@ -959,9 +959,9 @@ class TimeTrackingApp:
             with tab1:
                 # Header with project badge
                 # Filter None values for display
-                display_projects = [str(p) for p in selected_projects[:2] if p is not None]
+                display_projects = [str(p) for p in selected_projects[:2] if p is not None] if selected_projects else []
                 projects_text = ', '.join(display_projects) if display_projects else 'Keine Projekte'
-                more_indicator = '...' if len(selected_projects) > 2 else ''
+                more_indicator = '...' if selected_projects is not None and len(selected_projects) > 2 else ''
 
                 st.markdown(f"""
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
@@ -974,7 +974,7 @@ class TimeTrackingApp:
                 """, unsafe_allow_html=True)
 
                 # KPI Row - 4 Cards
-                if not dashboard_df.empty:
+                if dashboard_df is not None and not dashboard_df.empty:
                     col1, col2, col3, col4 = st.columns(4)
 
                     with col1:
@@ -1025,7 +1025,7 @@ class TimeTrackingApp:
                     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
                     render_section_header("Planned vs. Actual Hours", "Comparison across all projects")
 
-                    if not project_summary_df.empty:
+                    if project_summary_df is not None and not project_summary_df.empty:
                         # Create horizontal bar chart data
                         chart_data = project_summary_df.head(5).copy()
                         chart_data['Planned'] = chart_data['Sollstunden Gesamt']
@@ -1066,7 +1066,7 @@ class TimeTrackingApp:
                     st.markdown('<div class="chart-container">', unsafe_allow_html=True)
                     render_section_header("Project Health", "Portfolio Status Overview")
 
-                    if not project_summary_df.empty:
+                    if project_summary_df is not None and not project_summary_df.empty:
                         # Create health table
                         st.markdown("""
                         <table style="width: 100%; border-collapse: collapse;">
@@ -1135,7 +1135,7 @@ class TimeTrackingApp:
                 """, unsafe_allow_html=True)
 
                 # KPI Cards Row - 3 Cards
-                if not dashboard_df.empty:
+                if dashboard_df is not None and not dashboard_df.empty:
                     col1, col2, col3 = st.columns(3)
 
                     with col1:
@@ -1201,7 +1201,7 @@ class TimeTrackingApp:
                             # Daten laden
                             project_bookings = db_config.get_project_bookings([projekt], hours_column, filters=date_filters)
 
-                            if project_bookings.empty:
+                            if project_bookings is None or project_bookings.empty:
                                 st.info(f"Keine Buchungsdaten für Projekt '{projekt}' verfügbar")
                                 continue
 
@@ -1237,7 +1237,7 @@ class TimeTrackingApp:
                             # NEU: Sprint-Velocity Chart (optional)
                             with st.expander("📊 Sprint-Velocity Analyse"):
                                 engine = ForecastEngine(project_bookings, total_target)
-                                if len(engine.sprint_data) > 0:
+                                if engine.sprint_data is not None and len(engine.sprint_data) > 0:
                                     render_sprint_velocity_chart(engine.sprint_data)
                                 else:
                                     st.info("Keine Sprint-Daten verfügbar (benötigt Buchungen der letzten 8 Wochen)")
@@ -1267,7 +1267,7 @@ class TimeTrackingApp:
                             # Daten laden
                             project_bookings = db_config.get_project_bookings([projekt], hours_column, filters=date_filters)
 
-                            if project_bookings.empty:
+                            if project_bookings is None or project_bookings.empty:
                                 st.info(f"Keine Buchungsdaten für Projekt '{projekt}' verfügbar")
                                 continue
 
@@ -1340,7 +1340,7 @@ class TimeTrackingApp:
                 """, unsafe_allow_html=True)
 
                 # Summary cards
-                if not dashboard_df.empty:
+                if dashboard_df is not None and not dashboard_df.empty:
                     col1, col2 = st.columns(2)
                     with col1:
                         total_target = dashboard_df['Sollstunden'].sum()
@@ -1395,7 +1395,7 @@ class TimeTrackingApp:
                                 <span class="material-icons" style="color: #135bec; font-size: 1.5rem;">table_chart</span>
                             </div>
                             <div class="kpi-label">Records Ready</div>
-                            <div class="kpi-value">{len(filtered_data) if not filtered_data.empty else 0}</div>
+                            <div class="kpi-value">{len(filtered_data) if filtered_data is not None and not filtered_data.empty else 0}</div>
                             <div class="kpi-trend neutral">Available for export</div>
                         </div>
                         """, unsafe_allow_html=True)
@@ -1407,16 +1407,16 @@ class TimeTrackingApp:
                                 <span class="material-icons" style="color: #135bec; font-size: 1.5rem;">folder</span>
                             </div>
                             <div class="kpi-label">Projects</div>
-                            <div class="kpi-value">{len(selected_projects)}</div>
+                            <div class="kpi-value">{len(selected_projects) if selected_projects is not None else 0}</div>
                             <div class="kpi-trend neutral">Selected projects</div>
                         </div>
                         """, unsafe_allow_html=True)
 
                     with col3:
                         date_range_text = "All time"
-                        if 'date_range' in date_filters and date_filters['date_range']:
+                        if 'date_range' in date_filters and date_filters.get('date_range') is not None:
                             dr = date_filters['date_range']
-                            if len(dr) == 2 and dr[0] and dr[1]:
+                            if isinstance(dr, (list, tuple)) and len(dr) == 2 and dr[0] and dr[1]:
                                 date_range_text = f"{dr[0].strftime('%d.%m.%y')} - {dr[1].strftime('%d.%m.%y')}"
 
                         st.markdown(f"""

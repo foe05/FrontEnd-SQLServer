@@ -67,7 +67,7 @@ class FilterManager:
         filters = {}
 
         # Add date range filter as tuple for database queries
-        if isinstance(date_range, tuple) and len(date_range) == 2:
+        if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
             filters["date_range"] = (date_range[0], date_range[1])
             filters["start_date"] = date_range[0]
             filters["end_date"] = date_range[1]
@@ -250,30 +250,30 @@ class FilterManager:
         if 'selected_activities' in filters and filters['selected_activities']:
             # Filter None values before join
             activities = [str(a) for a in filters['selected_activities'] if a is not None]
-            if len(activities) <= 3 and activities:
-                activity_text = f"Tätigkeiten: {', '.join(activities)}"
+            if activities is not None and len(activities) <= 3 and activities:
+                activity_text = f"Tätigkeiten: {', '.join([str(a) for a in activities if a is not None])}"
             else:
-                activity_text = f"Tätigkeiten: {len(activities)} ausgewählt"
+                activity_text = f"Tätigkeiten: {len(activities) if activities is not None else 0} ausgewählt"
             active_filters.append(activity_text)
             filter_details.append((activity_text, 'activities', None))
 
         if 'selected_customers' in filters and filters['selected_customers']:
             # Filter None values before join
             customers = [str(c) for c in filters['selected_customers'] if c is not None]
-            if len(customers) <= 3 and customers:
-                customer_text = f"Kunden: {', '.join(customers)}"
+            if customers is not None and len(customers) <= 3 and customers:
+                customer_text = f"Kunden: {', '.join([str(c) for c in customers if c is not None])}"
             else:
-                customer_text = f"Kunden: {len(customers)} ausgewählt"
+                customer_text = f"Kunden: {len(customers) if customers is not None else 0} ausgewählt"
             active_filters.append(customer_text)
             filter_details.append((customer_text, 'customers', None))
 
         if 'selected_employees' in filters and filters['selected_employees']:
             # Filter None values before join
             employees = [str(e) for e in filters['selected_employees'] if e is not None]
-            if len(employees) <= 3 and employees:
-                employee_text = f"Mitarbeiter: {', '.join(employees)}"
+            if employees is not None and len(employees) <= 3 and employees:
+                employee_text = f"Mitarbeiter: {', '.join([str(e) for e in employees if e is not None])}"
             else:
-                employee_text = f"Mitarbeiter: {len(employees)} ausgewählt"
+                employee_text = f"Mitarbeiter: {len(employees) if employees is not None else 0} ausgewählt"
             active_filters.append(employee_text)
             filter_details.append((employee_text, 'employees', None))
 

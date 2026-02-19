@@ -5,6 +5,7 @@ Allows admins to manage user-project assignments
 import streamlit as st
 import json
 import os
+import logging
 from typing import Dict, List, Any
 from config.database import db_config
 
@@ -101,9 +102,14 @@ class AdminUserManager:
         st.markdown("#### Projektzuordnung")
         st.markdown("Geben Sie Projektkürzel kommasepariert ein (z.B. `P24SAN04, P24FBW06, P24SAN15`)")
         
+        # Robust joining: filter out None and log warnings if detected
+        safe_projects = [str(p) for p in current_projects if p is not None]
+        if len(safe_projects) < len(current_projects):
+            logging.warning(f"Data integrity issue: None values found in projects for user {user_email}")
+
         projects_input = st.text_area(
             "Projektkürzel:",
-            value=", ".join(current_projects),
+            value=", ".join(safe_projects),
             height=100,
             key=f"projects_{user_email}"
         )
@@ -124,11 +130,13 @@ class AdminUserManager:
                     
                     if valid_projects:
                         st.success(f"✅ Gültige Projekte ({len(valid_projects)}):")
-                        st.code(", ".join(valid_projects))
+                        # Robust joining for validation display
+                        st.code(", ".join([str(p) for p in valid_projects if p is not None]))
                     
                     if invalid_projects:
                         st.error(f"❌ Nicht gefundene Projekte ({len(invalid_projects)}):")
-                        st.code(", ".join(invalid_projects))
+                        # Robust joining for validation display
+                        st.code(", ".join([str(p) for p in invalid_projects if p is not None]))
                         st.warning("Diese Projekte existieren nicht in der ZV-Tabelle!")
         
         with col2:
@@ -203,11 +211,13 @@ class AdminUserManager:
                 
                 if valid_projects:
                     st.success(f"✅ Gültige Projekte ({len(valid_projects)}):")
-                    st.code(", ".join(valid_projects))
+                    # Robust joining for validation display
+                    st.code(", ".join([str(p) for p in valid_projects if p is not None]))
                 
                 if invalid_projects:
                     st.error(f"❌ Nicht gefundene Projekte ({len(invalid_projects)}):")
-                    st.code(", ".join(invalid_projects))
+                    # Robust joining for validation display
+                    st.code(", ".join([str(p) for p in invalid_projects if p is not None]))
                     st.warning("Diese Projekte existieren nicht in der ZV-Tabelle!")
         
         st.markdown("#### Berechtigungen")

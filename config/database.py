@@ -197,7 +197,7 @@ class DatabaseConfig:
                 params.append(filters['status'])
             if filters.get('date_range'):
                 date_range = filters['date_range']
-                if len(date_range) == 2:
+                if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
                     start_date, end_date = date_range
                     if start_date:
                         where_conditions.append("[Datum] >= ?")
@@ -268,7 +268,7 @@ class DatabaseConfig:
                 params.append(filters['month'])
             if filters.get('date_range'):
                 date_range = filters['date_range']
-                if len(date_range) == 2:
+                if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
                     start_date, end_date = date_range
                     if start_date:
                         where_conditions.append("[Datum] >= ?")
@@ -347,7 +347,7 @@ class DatabaseConfig:
         if filters:
             if filters.get('date_range'):
                 date_range = filters['date_range']
-                if len(date_range) == 2:
+                if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
                     start_date, end_date = date_range
                     if start_date:
                         where_conditions.append("[Datum] >= ?")
