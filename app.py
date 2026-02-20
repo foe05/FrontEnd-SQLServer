@@ -885,14 +885,9 @@ class TimeTrackingApp:
                     st.session_state.data_loading = False
                     return
 
-                # Customer filter (rendered in sidebar after data is loaded)
-                with st.sidebar:
-                    selected_customers = filter_manager.customer_filter(raw_data)
-
                 # Apply additional filters
                 filter_params = {
                     'search_term': search_term,
-                    'selected_customers': selected_customers,
                     'selected_employees': selected_employees,
                 }
 
@@ -921,7 +916,6 @@ class TimeTrackingApp:
             filter_manager.show_filter_summary({
                 **date_filters,
                 'selected_projects': selected_projects,
-                'selected_customers': selected_customers,
                 'selected_employees': selected_employees,
                 'search_term': search_term
             }, record_count=len(filtered_data) if filtered_data is not None else 0)

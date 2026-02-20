@@ -123,28 +123,6 @@ class FilterManager:
         else:
             return selected_activities
 
-    def customer_filter(self, df: pd.DataFrame) -> List[str]:
-        """Filter by customer name (Kundenname)"""
-        if df.empty:
-            return []
-
-        customers = sorted(df['Kundenname'].unique()) if 'Kundenname' in df.columns else []
-
-        if not customers:
-            return []
-
-        selected_customers = st.multiselect(
-            "👤 Kunden Filter",
-            options=["Alle"] + customers,
-            default=["Alle"],
-            help="Filtern Sie nach spezifischen Kunden"
-        )
-
-        if "Alle" in selected_customers:
-            return customers
-        else:
-            return selected_customers
-
     def employee_filter(self, df: pd.DataFrame) -> List[str]:
         """Filter by employee (Mitarbeiter)"""
         if df.empty:
@@ -205,11 +183,6 @@ class FilterManager:
             if 'Activity' in filtered_df.columns:
                 filtered_df = filtered_df[filtered_df['Activity'].isin(filters['selected_activities'])]
 
-        # Apply customer filter
-        if 'selected_customers' in filters and filters['selected_customers']:
-            if 'Kundenname' in filtered_df.columns:
-                filtered_df = filtered_df[filtered_df['Kundenname'].isin(filters['selected_customers'])]
-
         # Apply employee filter
         if 'selected_employees' in filters and filters['selected_employees']:
             if 'Name' in filtered_df.columns:
@@ -256,16 +229,6 @@ class FilterManager:
                 activity_text = f"Tätigkeiten: {len(activities) if activities is not None else 0} ausgewählt"
             active_filters.append(activity_text)
             filter_details.append((activity_text, 'activities', None))
-
-        if 'selected_customers' in filters and filters['selected_customers']:
-            # Filter None values before join
-            customers = [str(c) for c in filters['selected_customers'] if c is not None]
-            if customers is not None and len(customers) <= 3 and customers:
-                customer_text = f"Kunden: {', '.join([str(c) for c in customers if c is not None])}"
-            else:
-                customer_text = f"Kunden: {len(customers) if customers is not None else 0} ausgewählt"
-            active_filters.append(customer_text)
-            filter_details.append((customer_text, 'customers', None))
 
         if 'selected_employees' in filters and filters['selected_employees']:
             # Filter None values before join
@@ -322,7 +285,6 @@ class FilterManager:
         filter_keys = [
             'selected_projects',
             'selected_activities',
-            'selected_customers',
             'search_term'
         ]
 
